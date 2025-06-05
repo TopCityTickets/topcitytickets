@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -9,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
-import { signInWithPassword, signUpWithPassword } from '@/lib/actions/auth';
+import { Mail, Lock, Eye, EyeOff, User, Chrome, Loader2 } from 'lucide-react';
+import { signInWithPassword, signUpWithPassword, signInWithGoogle } from '@/lib/actions/auth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
@@ -30,6 +31,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [isGooglePending, startGoogleTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<AuthFormValues>({
@@ -64,11 +66,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
         } else {
           toast({
             title: mode === 'login' ? 'Login Successful' : 'Signup Successful',
-            description: mode === 'login' ? 'Welcome back!' : 'Please check your email to verify your account.',
+            description: mode === 'login' ? 'Welcome back!' : mode === 'signup' ? 'Please check your email to verify your account (if required).' : '',
           });
-          const redirectedFrom = searchParams.get('redirectedFrom') || '/';
+          const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard/profile'; // Redirect to profile or dashboard
           router.push(redirectedFrom);
-          router.refresh(); // Important to update server state
+          router.refresh(); 
         }
       } catch (err: any) {
         toast({
@@ -77,6 +79,21 @@ export default function AuthForm({ mode }: AuthFormProps) {
           variant: 'destructive',
         });
       }
+    });
+  };
+
+  const handleGoogleSignIn = async () => {
+    startGoogleTransition(async () => {
+      const error = await signInWithGoogle();
+      if (error) {
+        toast({
+          title: 'Google Sign-In Error',
+          description: error,
+          variant: 'destructive',
+        });
+      }
+      // Successful Google sign-in will redirect via server action, then /auth/callback handles final app redirect.
+      // No client-side redirect or toast needed here for success.
     });
   };
 
@@ -91,7 +108,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
             {mode === 'login' ? 'Enter your credentials to access your account.' : 'Fill in the details to join Top City Tickets.'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {mode === 'signup' && (
               <div className="space-y-2">
@@ -104,7 +121,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     placeholder="John Doe"
                     {...form.register('name')}
                     className="pl-10"
-                    disabled={isPending}
+                    disabled={isPending || isGooglePending}
                   />
                 </div>
                 {form.formState.errors.name && (
@@ -122,7 +139,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   placeholder="you@example.com"
                   {...form.register('email')}
                   className="pl-10"
-                  disabled={isPending}
+                  disabled={isPending || isGooglePending}
                 />
               </div>
               {form.formState.errors.email && (
@@ -139,7 +156,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   placeholder="••••••••"
                   {...form.register('password')}
                   className="pl-10 pr-10"
-                  disabled={isPending}
+                  disabled={isPending || isGooglePending}
                 />
                 <Button
                   type="button"
@@ -148,6 +165,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
+                  disabled={isPending || isGooglePending}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>
@@ -156,10 +174,35 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={isPending} variant="default">
+            <Button type="submit" className="w-full" disabled={isPending || isGooglePending} variant="default">
               {isPending ? (mode === 'login' ? 'Logging in...' : 'Signing up...') : (mode === 'login' ? 'Login' : 'Sign Up')}
             </Button>
           </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignIn}
+            disabled={isPending || isGooglePending}
+          >
+            {isGooglePending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Chrome className="mr-2 h-4 w-4" />
+            )}
+            Sign {mode === 'login' ? 'in' : 'up'} with Google
+          </Button>
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-2">
            <p className="text-sm text-muted-foreground">
