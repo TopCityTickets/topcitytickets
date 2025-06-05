@@ -1,28 +1,25 @@
-import { getEventById, getAllEvents } from '@/lib/mockEvents'; // Using mock data
+import { getEventBySlug, getAllEvents } from '@/lib/events'; // Updated import
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { CalendarDays, MapPin, Ticket as TicketIcon, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import SocialShareButtons from '@/components/events/social-share-buttons';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card'; // Removed CardHeader, CardTitle as they are handled differently
 import Link from 'next/link';
 
 interface EventPageProps {
-  params: { id: string };
+  params: { id: string }; // id here is expected to be the slug
 }
 
-// For static generation of event pages
 export async function generateStaticParams() {
   const events = await getAllEvents();
   return events.map((event) => ({
-    id: event.slug,
+    id: event.slug, // Use slug for params
   }));
 }
 
-
 export async function generateMetadata({ params }: EventPageProps) {
-  const event = await getEventById(params.id);
+  const event = await getEventBySlug(params.id); // Use slug
   if (!event) {
     return { title: 'Event Not Found' };
   }
@@ -32,16 +29,14 @@ export async function generateMetadata({ params }: EventPageProps) {
   };
 }
 
-
 export default async function EventPage({ params }: EventPageProps) {
-  const event = await getEventById(params.id);
+  const event = await getEventBySlug(params.id); // Use slug
 
   if (!event) {
     notFound();
   }
 
   const eventUrl = typeof window !== 'undefined' ? window.location.href : `/events/${event.slug}`;
-
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -63,7 +58,7 @@ export default async function EventPage({ params }: EventPageProps) {
           </div>
         )}
         <CardContent className="p-6 md:p-8 space-y-6">
-          {!event.imageUrl && <CardTitle className="text-3xl md:text-4xl font-bold font-headline mb-4">{event.name}</CardTitle>}
+          {!event.imageUrl && <h1 className="text-3xl md:text-4xl font-bold font-headline mb-4 text-primary">{event.name}</h1>}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-lg">
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md">

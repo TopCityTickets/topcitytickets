@@ -9,68 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      // Example: If you have an 'events' table
-      // events: {
-      //   Row: {
-      //     id: string
-      //     created_at: string
-      //     name: string
-      //     date: string
-      //     time: string
-      //     venue: string
-      //     description: string
-      //     ticket_price: number
-      //     image_url: string | null
-      //     organizer_email: string
-      //     slug: string
-      //     user_id: string // who submitted it
-      //     is_approved: boolean 
-      //   }
-      //   Insert: {
-      //     id?: string
-      //     created_at?: string
-      //     name: string
-      //     date: string
-      //     time: string
-      //     venue: string
-      //     description: string
-      //     ticket_price: number
-      //     image_url?: string | null
-      //     organizer_email: string
-      //     slug: string
-      //     user_id: string
-      //     is_approved?: boolean
-      //   }
-      //   Update: {
-      //     id?: string
-      //     created_at?: string
-      //     name?: string
-      //     date?: string
-      //     time?: string
-      //     venue?: string
-      //     description?: string
-      //     ticket_price?: number
-      //     image_url?: string | null
-      //     organizer_email?: string
-      //     slug?: string
-      //     user_id?: string
-      //     is_approved?: boolean
-      //   }
-      //   Relationships: [
-      //     {
-      //       foreignKeyName: "events_user_id_fkey"
-      //       columns: ["user_id"]
-      //       referencedRelation: "users"
-      //       referencedColumns: ["id"]
-      //     }
-      //   ]
-      // }
-      // This is a placeholder.
-      // Generate your C# types from Supabase and paste them here.
-      // Example: `supabase gen types typescript --project-id YOUR_PROJECT_ID > src/types/supabase.ts`
-      // For the purpose of this app, we will assume an 'events' table might exist
-      // but will primarily use mock data for display, and submissions will be logged.
-      // If you create an 'event_submissions' table for pending events, define it here.
+      events: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          date: string // Consider 'date' type in DB
+          time: string // Consider 'time' type in DB
+          venue: string
+          description: string
+          ticket_price: number
+          image_url: string | null
+          organizer_email: string
+          slug: string
+          user_id: string | null
+          is_approved: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          date: string
+          time: string
+          venue: string
+          description: string
+          ticket_price: number
+          image_url?: string | null
+          organizer_email: string
+          slug: string
+          user_id?: string | null
+          is_approved?: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          date?: string
+          time?: string
+          venue?: string
+          description?: string
+          ticket_price?: number
+          image_url?: string | null
+          organizer_email?: string
+          slug?: string
+          user_id?: string | null
+          is_approved?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       event_submissions: {
         Row: {
           id: string
@@ -84,7 +78,7 @@ export type Database = {
           image_url: string | null
           organizer_email: string
           user_id: string
-          status: "pending" | "approved" | "rejected" // Example status
+          status: "pending" | "approved" | "rejected"
         }
         Insert: {
           id?: string

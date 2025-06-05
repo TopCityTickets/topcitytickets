@@ -1,5 +1,5 @@
 import EventList from '@/components/events/event-list';
-import { getAllEvents } from '@/lib/mockEvents'; // Will use mock data for now
+import { getAllEvents } from '@/lib/events'; // Updated import
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
