@@ -3,15 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { BadgePercent, ShieldCheck } from 'lucide-react'; // Added ShieldCheck for role display
-import { toast } from '@/components/ui/use-toast'; // Note: use-toast is client-side, can't be called directly in Server Component.
+import { BadgePercent, ShieldCheck } from 'lucide-react';
 
 export default async function ProfilePage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    // This should ideally be handled by middleware or layout, but as a fallback:
     return <p>Please log in to view your profile.</p>;
   }
   
@@ -30,32 +28,23 @@ export default async function ProfilePage() {
 
   const userRole = user.user_metadata?.role as string | undefined;
 
-  // Placeholder action for requesting seller status
-  // In a real app, this would call a server action or API endpoint
-  const handleRequestSellerStatus = async () => {
-    'use server'; // This makes it a server action, but it can't be defined inside a Server Component's render logic directly.
-                  // It would need to be an exported function in a separate file or called via a form.
-                  // For now, this is a conceptual placeholder.
-    // console.log('User requested seller status. Admin needs to approve.');
-    // toast({ title: "Request Sent", description: "Your request to become a seller has been submitted for admin approval."});
-    // This toast would require client-side invocation.
-  };
-
-
   return (
     <div className="max-w-2xl mx-auto">
       <Card className="shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <Avatar className="h-24 w-24 border-2 border-primary">
-              {/* <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email} /> */}
               <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
                 {getInitials(user.email)}
               </AvatarFallback>
             </Avatar>
           </div>
-          <CardTitle className="text-3xl font-headline">{user.user_metadata?.full_name || user.email}</CardTitle>
-          <CardDescription>View and manage your profile information.</CardDescription>
+          <CardTitle className="text-3xl font-headline">
+            {userRole === 'seller' ? 'Seller Dashboard & Profile' : (user.user_metadata?.full_name || user.email)}
+          </CardTitle>
+          <CardDescription>
+            {userRole === 'seller' ? 'Manage your seller activities and profile.' : 'View and manage your profile information.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -89,20 +78,17 @@ export default async function ProfilePage() {
                     Interested in listing your events on Top City Tickets? Request to become a seller!
                     Your request will be reviewed by an administrator.
                 </p>
-                {/* This button is a placeholder. For actual functionality, it would need a form and server action */}
                 <Button 
                     className="w-full" 
                     onClick={() => {
-                        // Client-side interaction or navigation for a more complex flow
-                        // For now, it's a visual placeholder.
-                        alert("Seller request submitted (simulated). Admin will review.");
+                        alert("Seller status request noted. An admin will review your account. This is a manual process for now.");
                     }}
                 >
                     <BadgePercent className="mr-2 h-5 w-5" />
                     Request Seller Status
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                    (This is currently a manual admin process)
+                    (Admin will manually update your role upon approval)
                 </p>
                 </div>
           </div>
