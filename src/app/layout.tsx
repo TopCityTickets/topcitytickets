@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
+import CopyrightYear from '@/components/layout/copyright-year';
 import { Suspense } from 'react';
 import Loading from './loading';
 
@@ -32,7 +33,7 @@ export default function RootLayout({
         </main>
         <Toaster />
         <footer className="bg-muted text-muted-foreground py-6 text-center">
-          <p>&copy; {new Date().getFullYear()} Top City Tickets. All rights reserved.</p>
+          <p>&copy; <CopyrightYear /> Top City Tickets. All rights reserved.</p>
         </footer>
       </body>
     </html>
