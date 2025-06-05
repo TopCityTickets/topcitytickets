@@ -1,8 +1,9 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { Database } from '@/types/supabase';
+import type { Database, TablesInsert } from '@/types/supabase'; // Updated import
 
 export type SubmitEventState = {
   message?: string | null;
@@ -36,6 +37,16 @@ export async function submitEvent(
     };
   }
 
+  // Check if user is a seller
+  const userRole = user.user_metadata?.role;
+  if (userRole !== 'seller') {
+    return {
+      message: 'You must be an approved seller to submit events.',
+      success: false,
+      errors: { general: ['Seller role required.'] }
+    };
+  }
+
   const rawFormData = {
     name: formData.get('name') as string,
     date: formData.get('date') as string,
@@ -43,7 +54,7 @@ export async function submitEvent(
     venue: formData.get('venue') as string,
     description: formData.get('description') as string,
     ticketPrice: parseFloat(formData.get('ticketPrice') as string),
-    organizerEmail: formData.get('organizerEmail') as string,
+    organizerEmail: formData.get('organizerEmail') as string, // Consider populating from user.email if appropriate
     imageUrl: formData.get('imageUrl') as string | null,
   };
 
@@ -60,23 +71,22 @@ export async function submitEvent(
   if (Object.keys(errors).length > 0) {
     return { message: 'Invalid form data.', errors, success: false };
   }
-
-  // For this assignment, we're not actually saving to a live "approved events" table.
-  // We simulate submission, e.g., by logging or inserting into a "submissions" table if set up.
-  // Example: inserting into an 'event_submissions' table
   
-  type EventSubmissionInsert = Database['public']['Tables']['event_submissions']['Insert'];
-
-  const submissionData: EventSubmissionInsert = {
-    ...rawFormData,
+  const submissionData: TablesInsert<'event_submissions'> = {
+    name: rawFormData.name,
+    date: rawFormData.date,
+    time: rawFormData.time,
+    venue: rawFormData.venue,
+    description: rawFormData.description,
+    ticket_price: rawFormData.ticketPrice,
+    image_url: rawFormData.imageUrl,
+    organizer_email: rawFormData.organizerEmail, // This could default to user's email
     user_id: user.id,
-    status: 'pending', // default status
+    status: 'pending',
   };
   
-  // console.log('Event Submission Data:', submissionData);
-  // Instead of direct insert to a live table, let's assume a submissions table
   const { error: submissionError } = await supabase
-    .from('event_submissions') // Assuming you have this table for pending events
+    .from('event_submissions')
     .insert(submissionData);
 
   if (submissionError) {
@@ -88,9 +98,8 @@ export async function submitEvent(
     };
   }
 
+  revalidatePath('/submit-event'); // Revalidate the submission page itself
+  // Optionally, revalidate a page where users can see their submissions, e.g., /dashboard/my-submissions
 
-  // Revalidate path if you have a page that shows submitted events by user
-  // revalidatePath('/dashboard/my-submissions'); 
-
-  return { message: 'Event submitted successfully! It will be reviewed by our team.', success: true };
+  return { message: 'Event submitted successfully for review! It will be reviewed by our team.', success: true };
 }
