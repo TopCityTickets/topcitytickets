@@ -1,3 +1,4 @@
+
 import type { Event } from '@/types';
 import EventCard from './event-card';
 
@@ -7,7 +8,7 @@ interface EventListProps {
 
 export default function EventList({ events }: EventListProps) {
   if (!events || events.length === 0) {
-    return <p className="text-center text-muted-foreground py-10">No events found.</p>;
+    return <p className="text-center text-muted-foreground py-10">No events currently. Please check back later!</p>;
   }
 
   return (

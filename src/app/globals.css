@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -46,43 +47,42 @@
   }
 
   .dark {
-    /* Define dark mode colors if needed, for now using light mode values as base */
-    --background: 20 14.3% 4.1%;
-    --foreground: 0 0% 95%;
+    --background: 220 25% 10%; /* Very dark desaturated blue */
+    --foreground: 220 10% 90%; /* Light grey */
 
-    --card: 24 9.8% 10%;
-    --card-foreground: 0 0% 95%;
+    --card: 220 25% 15%;
+    --card-foreground: 220 10% 90%;
 
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 25% 12%;
+    --popover-foreground: 220 10% 90%;
 
-    --primary: 16 100% 66%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 180 100% 50%; /* Neon Cyan */
+    --primary-foreground: 180 100% 5%; /* Very dark cyan for contrast */
 
-    --secondary: 12 6.5% 15.1%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 20% 30%;
+    --secondary-foreground: 220 10% 80%;
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 220 20% 20%;
+    --muted-foreground: 220 10% 60%;
 
-    --accent: 39 100% 50%;
-    --accent-foreground: 39 100% 10%;
+    --accent: 330 100% 60%; /* Neon Magenta/Pink */
+    --accent-foreground: 330 100% 10%; /* Very dark magenta for contrast */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 55%; /* Adjusted Red for dark mode */
+    --destructive-foreground: 0 0% 95%;
 
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 16 100% 50%;
+    --border: 220 20% 25%;
+    --input: 220 20% 22%;
+    --ring: 180 100% 55%; /* Primary (Neon Cyan) variant for ring */
     
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 16 100% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 39 100% 55%;
-    --sidebar-accent-foreground: 39 100% 15%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 16 100% 50%;
+    --sidebar-background: 220 25% 12%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-primary: 180 100% 50%;
+    --sidebar-primary-foreground: 180 100% 5%;
+    --sidebar-accent: 330 100% 60%;
+    --sidebar-accent-foreground: 330 100% 10%;
+    --sidebar-border: 220 20% 20%;
+    --sidebar-ring: 180 100% 55%;
   }
 }
 
