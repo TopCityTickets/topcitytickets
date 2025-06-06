@@ -1,9 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@/types/supabase';
-
+// Supabase logic removed. This is now a stub.
 export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  throw new Error('Supabase client is not available.');
 }
