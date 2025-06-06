@@ -1,6 +1,5 @@
-import dynamic from 'next/dynamic';
-
-const EventClientPage = dynamic(() => import('./EventClientPage'), { ssr: false });
+"use client";
+import EventClientPage from './EventClientPage';
 
 export default function Page() {
   return <EventClientPage />;
