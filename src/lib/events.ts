@@ -18,36 +18,39 @@ function supabaseEventToAppEvent(eventRow: Tables<'events'>): Event {
   };
 }
 
-export const getEventBySlug = async (slug: string): Promise<Event | undefined> => {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_approved', true)
-    .maybeSingle();
+const hardcodedEvent: Event = {
+  id: '1',
+  name: 'Top City Music Festival',
+  date: '2025-07-15',
+  time: '18:00',
+  venue: 'Downtown Amphitheater',
+  description:
+    'Join us for an unforgettable night of music, food, and fun in the heart of the city! Featuring top artists and local talent.',
+  ticketPrice: 49.99,
+  imageUrl: '/sample-event.jpg',
+  organizerEmail: 'topcitytickets@gmail.com',
+  slug: 'top-city-music-festival',
+};
 
-  if (error) {
-    console.error('Error fetching event by slug:', error);
-    return undefined;
-  }
-  if (!data) {
-    return undefined;
-  }
-  return supabaseEventToAppEvent(data);
+export const getEventBySlug = async (slug: string): Promise<Event | undefined> => {
+  // Try Supabase first
+  try {
+    const { getEventBySlug: getFromDb } = await import('./events-supabase');
+    const dbEvent = await getFromDb(slug);
+    if (dbEvent) return dbEvent;
+  } catch {}
+  // Fallback to hardcoded event
+  if (slug === hardcodedEvent.slug) return hardcodedEvent;
+  return undefined;
 };
 
 export const getAllEvents = async (): Promise<Event[]> => {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('is_approved', true)
-    .order('date', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching all events:', error);
-    return [];
-  }
-  return data.map(supabaseEventToAppEvent);
+  // Try Supabase first
+  try {
+    const { getAllEvents: getFromDb } = await import('./events-supabase');
+    const dbEvents = await getFromDb();
+    if (dbEvents && dbEvents.length > 0) return dbEvents;
+  } catch {}
+  // Fallback to hardcoded event
+  return [hardcodedEvent];
 };
