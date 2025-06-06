@@ -42,7 +42,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   useEffect(() => {
     // If already logged in, redirect to dashboard
-    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    const user = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('currentUser') || 'null' : 'null');
     if (user) {
       router.push('/dashboard/profile');
     }
@@ -50,7 +50,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   const onSubmit = async (values: AuthFormValues) => {
     startTransition(() => {
-      let users = JSON.parse(localStorage.getItem('users') || '{}');
+      let users = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('users') || '{}' : '{}');
       let error = null;
       if (mode === 'login') {
         const user = users[values.email];
