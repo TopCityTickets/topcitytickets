@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -10,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Mail, Lock, Eye, EyeOff, User, Chrome, Loader2 } from 'lucide-react';
-import { signInWithPassword, signUpWithPassword, signInWithGoogle } from '@/lib/actions/auth';
+import { Mail, Lock, Eye, EyeOff, User, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
@@ -31,7 +29,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [isGooglePending, startGoogleTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<AuthFormValues>({
@@ -43,57 +40,55 @@ export default function AuthForm({ mode }: AuthFormProps) {
     },
   });
 
+  useEffect(() => {
+    // If already logged in, redirect to dashboard
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (user) {
+      router.push('/dashboard/profile');
+    }
+  }, []);
+
   const onSubmit = async (values: AuthFormValues) => {
-    startTransition(async () => {
-      try {
-        let error;
-        if (mode === 'login') {
-          error = await signInWithPassword(values);
+    startTransition(() => {
+      let users = JSON.parse(localStorage.getItem('users') || '{}');
+      let error = null;
+      if (mode === 'login') {
+        const user = users[values.email];
+        if (!user || user.password !== values.password) {
+          error = 'Invalid email or password.';
         } else {
-          if (!values.name) {
-            form.setError('name', { type: 'manual', message: 'Name is required for signup.' });
-            return;
-          }
-          error = await signUpWithPassword(values);
+          localStorage.setItem('currentUser', JSON.stringify(user));
         }
-
-        if (error) {
-          toast({
-            title: 'Authentication Error',
-            description: error,
-            variant: 'destructive',
-          });
+      } else {
+        if (!values.name) {
+          form.setError('name', { type: 'manual', message: 'Name is required for signup.' });
+          return;
+        }
+        if (users[values.email]) {
+          error = 'User already exists.';
         } else {
-          toast({
-            title: mode === 'login' ? 'Login Successful' : 'Signup Successful',
-            description: mode === 'login' ? 'Welcome back!' : mode === 'signup' ? 'Please check your email to verify your account (if required).' : '',
-          });
-          const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard/profile'; // Redirect to profile or dashboard
-          router.push(redirectedFrom);
-          router.refresh(); 
+          const role = values.email === 'topcitytickets@gmail.com' ? 'admin' : 'user';
+          const user = { email: values.email, password: values.password, name: values.name, role };
+          users[values.email] = user;
+          localStorage.setItem('users', JSON.stringify(users));
+          localStorage.setItem('currentUser', JSON.stringify(user));
         }
-      } catch (err: any) {
-        toast({
-          title: 'An Unexpected Error Occurred',
-          description: err.message || 'Please try again.',
-          variant: 'destructive',
-        });
       }
-    });
-  };
-
-  const handleGoogleSignIn = async () => {
-    startGoogleTransition(async () => {
-      const error = await signInWithGoogle();
       if (error) {
         toast({
-          title: 'Google Sign-In Error',
+          title: 'Authentication Error',
           description: error,
           variant: 'destructive',
         });
+      } else {
+        toast({
+          title: mode === 'login' ? 'Login Successful' : 'Signup Successful',
+          description: mode === 'login' ? 'Welcome back!' : 'Account created!',
+        });
+        const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard/profile';
+        router.push(redirectedFrom);
+        router.refresh();
       }
-      // Successful Google sign-in will redirect via server action, then /auth/callback handles final app redirect.
-      // No client-side redirect or toast needed here for success.
     });
   };
 
@@ -121,7 +116,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     placeholder="John Doe"
                     {...form.register('name')}
                     className="pl-10"
-                    disabled={isPending || isGooglePending}
+                    disabled={isPending}
                   />
                 </div>
                 {form.formState.errors.name && (
@@ -139,7 +134,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   placeholder="you@example.com"
                   {...form.register('email')}
                   className="pl-10"
-                  disabled={isPending || isGooglePending}
+                  disabled={isPending}
                 />
               </div>
               {form.formState.errors.email && (
@@ -156,7 +151,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   placeholder="••••••••"
                   {...form.register('password')}
                   className="pl-10 pr-10"
-                  disabled={isPending || isGooglePending}
+                  disabled={isPending}
                 />
                 <Button
                   type="button"
@@ -165,7 +160,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  disabled={isPending || isGooglePending}
+                  disabled={isPending}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>
@@ -174,7 +169,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={isPending || isGooglePending} variant="default">
+            <Button type="submit" className="w-full" disabled={isPending} variant="default">
               {isPending ? (mode === 'login' ? 'Logging in...' : 'Signing up...') : (mode === 'login' ? 'Login' : 'Sign Up')}
             </Button>
           </form>
@@ -189,20 +184,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
               </span>
             </div>
           </div>
-
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleGoogleSignIn}
-            disabled={isPending || isGooglePending}
-          >
-            {isGooglePending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Chrome className="mr-2 h-4 w-4" />
-            )}
-            Sign {mode === 'login' ? 'in' : 'up'} with Google
-          </Button>
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-2">
            <p className="text-sm text-muted-foreground">
