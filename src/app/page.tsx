@@ -1,4 +1,3 @@
-
 import EventList from '@/components/events/event-list';
 import { getAllEvents } from '@/lib/events';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,9 @@ export default async function HomePage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const userRole = user?.user_metadata?.role;
+
+  // Only show the seller button if the user is logged in and has the 'seller' role
+  const showSellerButton = !!user && userRole === 'seller';
 
   return (
     <div className="space-y-12">
@@ -27,7 +29,7 @@ export default async function HomePage() {
               Browse Events
             </Link>
           </Button>
-          {userRole === 'seller' && (
+          {showSellerButton && (
             <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10" asChild>
               <Link href="/submit-event">
                 <PlusCircle className="mr-2 h-5 w-5" />
@@ -35,21 +37,22 @@ export default async function HomePage() {
               </Link>
             </Button>
           )}
+          {!user && (
+            <>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button size="lg" asChild>
+                <Link href="/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
         </div>
       </section>
       
       <section id="events" className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold font-headline">Upcoming Events</h2>
-          {/* Redundant if button is in hero, but could be placed here too */}
-          {/* {userRole === 'seller' && (
-            <Button variant="outline" asChild>
-              <Link href="/submit-event">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Submit Your Event
-              </Link>
-            </Button>
-          )} */}
         </div>
         <EventList events={events} />
       </section>
