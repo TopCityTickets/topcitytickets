@@ -1,20 +1,20 @@
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
-  // if "next" is in params, use it as the redirect URL
-  const next = searchParams.get('next') ?? '/';
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
+  const next = requestUrl.searchParams.get('next') ?? '/';
 
   if (code) {
-    const supabase = createClient();
+    const supabase = createRouteHandlerClient({ cookies });
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${requestUrl.origin}${next}`);
     }
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/login?error=Could not authenticate user`);
+  return NextResponse.redirect(`${requestUrl.origin}/login?error=Could not authenticate user`);
 }
