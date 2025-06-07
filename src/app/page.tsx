@@ -1,18 +1,78 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabase";
 import EventList from '@/components/events/event-list';
-import { getAllEvents } from '@/lib/events';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
 import { PlusCircle } from 'lucide-react';
 
-export default async function HomePage() {
-  const events = await getAllEvents();
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const userRole = user?.user_metadata?.role;
+type ApprovedEvent = {
+  id: string;
+  title: string;
+  name: string; // required by EventList
+  imageUrl?: string;
+  slug?: string;
+  description?: string;
+  date: string;
+  time: string;
+  venue: string;
+  organizerEmail?: string;
+  ticketPrice?: number;
+};
 
-  // Only show the seller button if the user is logged in and has the 'seller' role
-  const showSellerButton = !!user && userRole === 'seller';
+export default function LandingPage() {
+  const [events, setEvents] = useState<ApprovedEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+
+  // Set your admin UID here (if needed) and admin email for redirecting
+  const adminUID = "5d2f1227-7db9-4e4f-a033-f29156e6cd3a";
+  const adminEmail = "topcitytickets@gmail.com";
+
+  useEffect(() => {
+    async function fetchApprovedEvents() {
+      // Querying the new "approved_events" table
+      const { data, error } = await supabase
+        .from("approved_events")
+        .select("*");
+      if (!error && data) {
+        const mappedData = (data as any[]).map(event => ({
+           ...event,
+           name: event.title,                    // Map title to name
+           date: event.date || "",                // Provide fallback if missing
+           time: event.time || "",
+           venue: event.venue || "",
+           description: event.description || ""   // Ensure description is a string
+        }));
+        setEvents(mappedData as ApprovedEvent[]);
+      }
+      setLoading(false);
+    }
+    fetchApprovedEvents();
+  }, []);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  // Redirect to admin dashboard if signed in as the admin email
+  useEffect(() => {
+    if (user && user.email === adminEmail) {
+      router.push("/admin-dashboard");
+    }
+  }, [user, router, adminEmail]);
+
+  if (loading) return <div>Loading events...</div>;
+
+  const hasEvents = events.length > 0;
 
   return (
     <div className="space-y-12">
@@ -29,7 +89,7 @@ export default async function HomePage() {
               Browse Events
             </Link>
           </Button>
-          {showSellerButton && (
+          {user && user.id === adminUID && (
             <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10" asChild>
               <Link href="/submit-event">
                 <PlusCircle className="mr-2 h-5 w-5" />
@@ -54,7 +114,11 @@ export default async function HomePage() {
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold font-headline">Upcoming Events</h2>
         </div>
-        <EventList events={events} />
+        {hasEvents ? (
+          <EventList events={events} />
+        ) : (
+          <div className="text-center py-12">No events available at this time</div>
+        )}
       </section>
     </div>
   );
