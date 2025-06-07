@@ -63,6 +63,9 @@ export default function EventClientPage() {
     });
   };
 
+  const formatEventTime = (time?: string) => time || 'Time TBA';
+  const formatEventVenue = (venue?: string) => venue || 'Venue TBA';
+
   if (loading) return (
     <div className="flex justify-center items-center min-h-[50vh]">
       <div className="animate-pulse text-lg">Loading event details...</div>
@@ -116,13 +119,13 @@ export default function EventClientPage() {
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md">
               <Clock className="w-6 h-6 text-primary" />
               <div>
-                <span className="font-semibold">Time:</span> {event.time}
+                <span className="font-semibold">Time:</span> {formatEventTime(event.time)}
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md">
               <MapPin className="w-6 h-6 text-primary" />
               <div>
-                <span className="font-semibold">Venue:</span> {event.venue}
+                <span className="font-semibold">Venue:</span> {formatEventVenue(event.venue)}
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md">
