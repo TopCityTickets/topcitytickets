@@ -41,7 +41,3 @@ export async function requestSeller(email: string) {
   }
   return 'User not found.';
 }
-
-export async function signInWithGoogle() {
-  throw new Error('signInWithGoogle should only be used in client components.');
-}

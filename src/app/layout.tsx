@@ -5,6 +5,19 @@ import Header from '@/components/layout/header';
 import CopyrightYear from '@/components/layout/copyright-year';
 import { Suspense } from 'react';
 import Loading from './loading';
+import { Poppins, PT_Sans } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+});
+
+const ptSans = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-pt-sans',
+});
 
 export const metadata: Metadata = {
   title: 'Top City Tickets',
@@ -16,15 +29,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className="dark min-h-full" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-        {/* favicon removed, will add new one when provided */}
-      </head>
+  return (    <html lang="en" className={`dark min-h-full ${poppins.variable} ${ptSans.variable}`} suppressHydrationWarning>
       <body className="font-body antialiased min-h-screen flex flex-col bg-gradient-to-b from-background via-muted/60 to-background/80 text-foreground">
         <Header />
         <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl w-full">
