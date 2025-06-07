@@ -9,16 +9,16 @@ import { PlusCircle } from 'lucide-react';
 
 type ApprovedEvent = {
   id: string;
-  title: string;
-  name: string; // required by EventList
-  imageUrl?: string;
-  slug?: string;
-  description?: string;
+  name: string;
   date: string;
   time: string;
   venue: string;
-  organizerEmail?: string;
-  ticketPrice?: number;
+  description: string;
+  ticket_price: number;
+  image_url?: string;
+  organizer_email: string;
+  slug: string;
+  is_approved: boolean;
 };
 
 export default function LandingPage() {
@@ -33,20 +33,26 @@ export default function LandingPage() {
 
   useEffect(() => {
     async function fetchApprovedEvents() {
-      // Querying the new "approved_events" table
       const { data, error } = await supabase
-        .from("approved_events")
-        .select("*");
+        .from("events")
+        .select("*")
+        .eq('is_approved', true);
+      
       if (!error && data) {
-        const mappedData = (data as any[]).map(event => ({
-           ...event,
-           name: event.title,                    // Map title to name
-           date: event.date || "",                // Provide fallback if missing
-           time: event.time || "",
-           venue: event.venue || "",
-           description: event.description || ""   // Ensure description is a string
+        const mappedData = data.map(event => ({
+          id: event.id,
+          name: event.name,
+          date: event.date,
+          time: event.time,
+          venue: event.venue,
+          description: event.description,
+          ticket_price: Number(event.ticket_price),
+          image_url: event.image_url,
+          organizer_email: event.organizer_email,
+          slug: event.slug,
+          is_approved: event.is_approved
         }));
-        setEvents(mappedData as ApprovedEvent[]);
+        setEvents(mappedData);
       }
       setLoading(false);
     }
@@ -115,7 +121,14 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold font-headline">Upcoming Events</h2>
         </div>
         {hasEvents ? (
-          <EventList events={events} />
+          <EventList 
+            events={events.map(event => ({
+              ...event,
+              ticketPrice: event.ticket_price,
+              imageUrl: event.image_url,
+              organizerEmail: event.organizer_email
+            }))} 
+          />
         ) : (
           <div className="text-center py-12">No events available at this time</div>
         )}
