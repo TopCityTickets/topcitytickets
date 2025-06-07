@@ -53,6 +53,16 @@ export default function EventClientPage() {
     fetchEvent();
   }, [id]);
 
+  const formatEventDate = (dateString?: string) => {
+    if (!dateString) return 'Date TBA';
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
   if (loading) return (
     <div className="flex justify-center items-center min-h-[50vh]">
       <div className="animate-pulse text-lg">Loading event details...</div>
@@ -100,7 +110,7 @@ export default function EventClientPage() {
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md">
               <CalendarDays className="w-6 h-6 text-primary" />
               <div>
-                <span className="font-semibold">Date:</span> {new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                <span className="font-semibold">Date:</span> {formatEventDate(event.date)}
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md">
