@@ -20,22 +20,20 @@ export default function Login() {
     setError(null);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const supabaseClient = supabase();
+      const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
 
       if (signInError) throw signInError;
 
-      // Check if login was successful
-      if (data?.user) {
-        // Add a small delay to allow the session to be set
-        await new Promise(resolve => setTimeout(resolve, 500));
-        router.push('/');
-        router.refresh();
-      }
+      // Add delay to ensure auth state is updated
+      await new Promise(resolve => setTimeout(resolve, 500));
+      router.push('/');
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      setError(err instanceof Error ? err.message : 'Failed to login');
     } finally {
       setLoading(false);
     }

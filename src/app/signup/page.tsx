@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -18,8 +19,15 @@ export default function SignUp() {
     setLoading(true);
     setError(null);
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const supabaseClient = supabase();
+      const { error: signUpError } = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
@@ -33,8 +41,7 @@ export default function SignUp() {
       router.push('/signup/success');
       
     } catch (err) {
-      const error = err as Error;
-      setError(error?.message || 'An error occurred during sign up');
+      setError(err instanceof Error ? err.message : 'Failed to sign up');
     } finally {
       setLoading(false);
     }
@@ -57,6 +64,14 @@ export default function SignUp() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          disabled={loading}
+          required
+        />
+        <Input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
           disabled={loading}
           required
         />

@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -34,7 +35,8 @@ export default function EventClientPage() {
     async function fetchEvent() {
       try {
         setError(null);
-        const { data, error } = await supabase
+        const supabaseClient = supabase();
+        const { data, error } = await supabaseClient
           .from('events')
           .select('*')
           .eq('id', id)
