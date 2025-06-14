@@ -1,15 +1,16 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Link from "next/link";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -19,29 +20,22 @@ export default function SignUp() {
     setLoading(true);
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const supabaseClient = supabase();
-      const { error: signUpError } = await supabaseClient.auth.signUp({
+      const { data, error } = await supabase().auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: { role: 'user' }
         }
       });
 
-      if (signUpError) throw signUpError;
-
-      // Show success message and redirect
-      router.push('/signup/success');
+      if (error) throw error;
       
+      router.push('/login?message=Check your email to confirm your account');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign up');
+      console.error(err);
+      setError('Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -49,7 +43,7 @@ export default function SignUp() {
 
   return (
     <div className="max-w-md mx-auto mt-8 p-6">
-      <h1 className="text-2xl font-bold mb-6">Sign Up</h1>
+      <h1 className="text-2xl font-bold mb-6">Create an Account</h1>
       <form onSubmit={handleSignUp} className="space-y-4">
         <Input
           type="email"
@@ -67,17 +61,15 @@ export default function SignUp() {
           disabled={loading}
           required
         />
-        <Input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          disabled={loading}
-          required
-        />
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing up..." : "Sign Up"}
+          {loading ? "Creating Account..." : "Sign Up"}
         </Button>
+        <div className="text-sm text-center">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            Login
+          </Link>
+        </div>
       </form>
       {error && (
         <Alert variant="destructive" className="mt-4">

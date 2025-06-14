@@ -1,5 +1,10 @@
 "use client";
-// ...existing imports...
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import { supabase } from '@/utils/supabase';
+import type { UserRole } from '@/types/auth';
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -22,6 +27,13 @@ export default function Navbar() {
     }
     getRole();
   }, []);
+
+  const handleLogout = async () => {
+    const supabaseClient = supabase();
+    await supabaseClient.auth.signOut();
+    setUser(null);
+    setUserRole('user');
+  };
 
   return (
     <nav className="border-b">
@@ -56,7 +68,14 @@ export default function Navbar() {
               <Button variant="outline" onClick={handleLogout}>Logout</Button>
             </>
           ) : (
-            // ...existing login/signup buttons...
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button variant="default" asChild>
+                <Link href="/signup">Sign Up</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>

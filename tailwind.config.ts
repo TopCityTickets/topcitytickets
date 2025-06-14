@@ -1,11 +1,12 @@
 import type {Config} from 'tailwindcss';
 
-export default {
-  darkMode: ['class'],
+const config = {
+  darkMode: "class", // Changed from ['class'] to "class"
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}', // Made this more inclusive
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',  // Make sure this line exists
   ],
   theme: {
     container: {
@@ -101,5 +102,7 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [],
 } satisfies Config;
+
+export default config;

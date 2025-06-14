@@ -1,14 +1,15 @@
-import { NextResponse } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: Request) {
-  try {
-    // ...existing middleware logic...
-    return NextResponse.next();
-  } catch (error) {
-    console.error("Middleware error:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
-  }
+export async function middleware(request: NextRequest) {
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req: request, res });
+  await supabase.auth.getSession();
+  return res;
 }
 
-// Optionally, update your config if needed:
-// export const config = { matcher: ["/"] }
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
+};

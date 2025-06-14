@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/utils/supabase";
-import { ADMIN_EMAIL } from "@/utils/supabase";
+import { ADMIN_EMAIL } from '@/types/auth';
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -45,6 +45,9 @@ export default function Navbar() {
       <div className="container mx-auto flex justify-between items-center p-4">
         <Link href="/" className="font-bold text-xl">
           TopCityTickets
+          <span className="text-xs ml-1 text-muted-foreground">
+            © {new Date().getFullYear()}
+          </span>
         </Link>
         <div className="flex gap-4">
           {user ? (
@@ -86,3 +89,6 @@ export default function Navbar() {
     </nav>
   );
 }
+
+// If you are using <Header /> everywhere, you can delete this file.
+// Otherwise, ensure you only have one navigation/header component in use.

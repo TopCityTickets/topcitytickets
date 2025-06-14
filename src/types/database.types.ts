@@ -1,14 +1,6 @@
 export type Database = {
   public: {
     Tables: {
-      users: {
-        Row: {
-          id: string
-          email: string
-          role: 'user' | 'seller' | 'admin'
-          created_at: string
-        }
-      }
       events: {
         Row: {
           id: string
@@ -18,12 +10,26 @@ export type Database = {
           time: string
           venue: string
           ticket_price: number
-          image_url?: string
+          image_url: string | null
           slug: string
           user_id: string
           organizer_email: string
           is_approved: boolean
           created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description: string
+          date: string
+          time: string
+          venue: string
+          ticket_price: number
+          image_url?: string | null
+          slug?: string
+          user_id: string
+          organizer_email: string
+          is_approved?: boolean
         }
       }
       event_submissions: {
@@ -35,13 +41,28 @@ export type Database = {
           time: string
           venue: string
           ticket_price: number
-          image_url?: string
+          image_url: string | null
           slug: string
           user_id: string
           organizer_email: string
-          status: 'pending' | 'approved' | 'rejected'
-          admin_feedback?: string
+          status: 'pending' | 'approved' | 'rejected' // Make sure this matches your Supabase enum type
+          admin_feedback: string | null
           created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description: string
+          date: string
+          time: string
+          venue: string
+          ticket_price: number
+          image_url?: string | null
+          slug?: string
+          user_id: string
+          organizer_email: string
+          status?: 'pending' | 'approved' | 'rejected'
+          admin_feedback?: string | null
         }
       }
     }

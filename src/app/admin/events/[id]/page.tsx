@@ -22,6 +22,10 @@ export default function AdminEventReview() {
       try {
         setLoading(true);
         const supabaseClient = supabase();
+        if (!supabaseClient) {
+          throw new Error('Failed to initialize Supabase client');
+        }
+
         const { data, error } = await supabaseClient
           .from('event_submissions')
           .select('*')
@@ -29,10 +33,10 @@ export default function AdminEventReview() {
           .single();
 
         if (error) throw error;
-        setEvent(data as EventSubmission);
-      } catch (error) {
-        setError('Error fetching event data');
-        console.error(error);
+        if (data) setEvent(data);
+      } catch (err) {
+        console.error('Error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load event');
       } finally {
         setLoading(false);
       }

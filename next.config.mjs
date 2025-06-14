@@ -4,12 +4,10 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
+        hostname: 'vzndqhzpzdphiiblwplh.supabase.co',
       },
     ],
-  },
-};
+  }
+}
 
-export default nextConfig;
+export default nextConfig

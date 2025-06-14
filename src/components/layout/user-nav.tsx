@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -15,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/utils/supabase';
 
 interface UserNavProps {
   user: User | null;
@@ -23,10 +22,10 @@ interface UserNavProps {
 
 export default function UserNav({ user }: UserNavProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseClient = supabase(); // Initialize client first
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut(); // Use client instance
     router.refresh(); // Refresh to update server-side data and re-trigger middleware
     router.push('/'); 
   };

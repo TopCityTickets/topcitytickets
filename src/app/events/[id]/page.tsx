@@ -13,7 +13,7 @@ export default function EventPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  useAuth(); // Just call for side effects if needed
   const supabaseClient = supabase();
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function EventPage() {
 
   return (
     <div>
-      <h1>{event.title}</h1>
+      <h1>{event.name}</h1>
       <p>{event.description}</p>
       {/* Render other event details */}
     </div>

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useFormState, useFormStatus } from 'react-dom';
 import { useEffect, useRef } from 'react';
@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { submitEvent, type SubmitEventState } from '@/lib/actions/events';
+import { SubmitEventState } from '@/lib/actions/events';
+import { submitEvent } from '@/lib/actions/events';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarIcon, ClockIcon, DollarSignIcon, ImageIcon, InfoIcon, MapPinIcon, TagIcon, UserIcon } from 'lucide-react';
 
@@ -23,7 +24,15 @@ function SubmitButton() {
 
 export default function SubmitEventForm() {
   const initialState: SubmitEventState = { message: null, errors: {}, success: false };
-  const [state, formAction] = useFormState(submitEvent, initialState);
+
+  const reducer = async (
+    prevState: SubmitEventState,
+    formData: FormData
+  ): Promise<SubmitEventState> => {
+    return await submitEvent(prevState, formData);
+  };
+
+  const [state, formAction] = useFormState(reducer, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

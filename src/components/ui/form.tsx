@@ -11,11 +11,12 @@ import {
   type FieldPath,
   type FieldValues,
 } from "react-hook-form"
+import { useForm, UseFormReturn, SubmitHandler } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
-
-const Form = FormProvider
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -166,9 +167,38 @@ const FormMessage = React.forwardRef<
 })
 FormMessage.displayName = "FormMessage"
 
+interface FormProps<TFormValues extends Record<string, any>> {
+  schema?: z.Schema<TFormValues>
+  onSubmit: SubmitHandler<TFormValues>
+  form?: UseFormReturn<TFormValues>
+  children: (form: UseFormReturn<TFormValues>) => React.ReactNode
+  className?: string
+  id?: string
+}
+
+export function Form<TFormValues extends Record<string, any>>({
+  schema,
+  onSubmit,
+  form,
+  children,
+  className,
+  ...props
+}: FormProps<TFormValues>) {
+  const methods = form || useForm<TFormValues>({
+    ...(schema && { resolver: zodResolver(schema as any) }),
+  })
+
+  return (
+    <FormProvider {...methods}>
+      <form onSubmit={methods.handleSubmit(onSubmit)} className={className} {...props}>
+        {children(methods)}
+      </form>
+    </FormProvider>
+  )
+}
+
 export {
   useFormField,
-  Form,
   FormItem,
   FormLabel,
   FormControl,

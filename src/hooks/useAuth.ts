@@ -1,33 +1,30 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
-import type { Database } from '@/types/database.types';
-
-type User = Database['public']['Tables']['users']['Row'];
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSeller, setIsSeller] = useState(false);
   const [loading, setLoading] = useState(true);
-  const supabaseClient = supabase();
 
   useEffect(() => {
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          const { data } = await supabaseClient
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          setUser(data);
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
+    const checkAuth = async () => {
+      const supabaseClient = supabase();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabaseClient
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        setIsAdmin(profile?.role === 'admin');
+        setIsSeller(profile?.role === 'seller');
       }
-    );
+      setLoading(false);
+    };
 
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, []);
 
-  return { user, loading, isAdmin: user?.role === 'admin', isSeller: user?.role === 'seller' };
+  return { isAdmin, isSeller, loading };
 }

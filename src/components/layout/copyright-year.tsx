@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function CopyrightYear() {
+export default function CopyrightYear(): JSX.Element {
   // Initialize with the current year. This will be consistent for server and client initial render.
   const [year, setYear] = useState(() => new Date().getFullYear());
 

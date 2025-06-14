@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://vzndqhzpzdphiiblwplh.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6bmRxaHpwemRwaGlpYmx3cGxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNDg0OTMsImV4cCI6MjA2NDcyNDQ5M30.JoKS1eOoS7samw_WHfRAmN4sp7YQD7Vm8FPK1WvKZis",
+    "NEXT_PUBLIC_SITE_URL": "https://topcitytickets-psi.vercel.app/"
+  }
+}

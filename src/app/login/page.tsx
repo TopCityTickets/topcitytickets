@@ -21,15 +21,13 @@ export default function Login() {
 
     try {
       const supabaseClient = supabase();
-      const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
+      const { error: signInError } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
 
       if (signInError) throw signInError;
 
-      // Add delay to ensure auth state is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
       router.push('/');
       router.refresh();
     } catch (err) {
@@ -63,8 +61,8 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </Button>
         <div className="text-sm text-center mt-4">
-          <Link href="/reset-password" className="text-primary hover:underline">
-            Forgot password?
+          <Link href="/signup" className="text-primary hover:underline">
+            Don't have an account? Sign Up
           </Link>
         </div>
       </form>
