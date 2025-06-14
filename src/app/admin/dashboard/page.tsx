@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/types/database.types";
 
 type EventSubmission = Database['public']['Tables']['event_submissions']['Row'];
-type EventStatus = 'pending' | 'approved' | 'rejected';
 
 export default function AdminDashboard() {
   const [submissions, setSubmissions] = useState<EventSubmission[]>([]);
@@ -18,14 +17,10 @@ export default function AdminDashboard() {
     async function fetchSubmissions() {
       try {
         const supabaseClient = supabase();
-        if (!supabaseClient) {
-          throw new Error('Failed to initialize Supabase client');
-        }
-
         const { data, error } = await supabaseClient
           .from('event_submissions')
           .select('*')
-          .eq('status' as keyof EventSubmission['status'], 'pending' satisfies EventStatus)
+          .eq('status', 'pending')
           .order('created_at', { ascending: false });
 
         if (error) throw error;

@@ -1,5 +1,15 @@
 {
     "IDX.aI.enableInlineCompletion": true,
     "IDX.aI.enableCodebaseIndexing": true,
-    "github.copilot.selectedCompletionModel": "Claude 3.5 Sonnet"
+    "github.copilot.selectedCompletionModel": "Claude 3.5 Sonnet",
+    "github.copilot.advanced": {
+
+        "enableCopilotForPullRequestReview": true,
+        "enableCopilotForIssueComment": true,
+        "enableCopilotForIssueCreation": true,
+        "enableCopilotForCodeSearch": true,
+        "enableCopilotForCodeReview": true,
+        "enableCopilotForCodeNavigation": true,
+        "enableCopilotForCodeCompletion": true
+    }
 }

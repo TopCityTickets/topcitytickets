@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/utils/supabase';
 import type { UserRole } from '@/types/auth';
+import type { Database } from '@/types/database.types';
+
+type UserResponse = Database['public']['Tables']['users']['Row'];
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -19,10 +22,12 @@ export default function Navbar() {
           .from('users')
           .select('role')
           .eq('id', session.user.id)
-          .single();
+          .single() as { data: UserResponse | null };
         
-        setUser(session.user);
-        setUserRole(userData?.role || 'user');
+        if (userData) {
+          setUser(session.user);
+          setUserRole(userData.role as UserRole);
+        }
       }
     }
     getRole();
