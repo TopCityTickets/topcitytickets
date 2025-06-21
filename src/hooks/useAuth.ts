@@ -1,30 +1,69 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
+import type { User } from '@supabase/supabase-js';
+import type { UserRole } from '@/types/auth';
 
 export function useAuth() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isSeller, setIsSeller] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>('user');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const supabaseClient = supabase();
-      const { data: { session } } = await supabaseClient.auth.getSession();
+    const client = supabase();
+    
+    // Get initial session
+    const getSession = async () => {
+      const { data: { session } } = await client.auth.getSession();
       if (session?.user) {
-        const { data: profile } = await supabaseClient
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        setIsAdmin(profile?.role === 'admin');
-        setIsSeller(profile?.role === 'seller');
+        setUser(session.user);
+        await getUserRole(session.user.id);
       }
       setLoading(false);
     };
 
-    checkAuth();
+    // Get user role from database
+    const getUserRole = async (userId: string) => {
+      try {
+        const { data, error } = await client
+          .from('users')
+          .select('role')
+          .match({ id: userId })
+          .single();
+        
+        if (!error && data && typeof data === 'object' && 'role' in data) {
+          setUserRole(data.role as UserRole);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+
+    // Listen for auth changes
+    const { data: { subscription } } = client.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          await getUserRole(session.user.id);
+        } else {
+          setUser(null);
+          setUserRole('user');
+        }
+        setLoading(false);
+      }
+    );
+
+    getSession();
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  return { isAdmin, isSeller, loading };
+  return {
+    user,
+    userRole,
+    loading,
+    isLoading: loading,
+    isAdmin: userRole === 'admin',
+    isSeller: userRole === 'seller',
+    isAuthenticated: !!user
+  };
 }
