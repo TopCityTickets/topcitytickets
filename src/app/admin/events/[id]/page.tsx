@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
-import type { Database } from '@/types/database.types';
+import { EventSubmission, safeCast } from '@/lib/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
-
-type EventSubmission = Database['public']['Tables']['event_submissions']['Row'];
 
 export default function AdminEventReview() {
   const params = useParams();
@@ -27,10 +25,8 @@ export default function AdminEventReview() {
           .from('event_submissions')
           .select()
           .match({ id: eventId })
-          .single();
-
-        if (error) throw error;
-        setEvent(data);
+          .single();        if (error) throw error;
+        setEvent(safeCast(data, null));
       } catch (err) {
         console.error('Error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load event');
@@ -48,11 +44,10 @@ export default function AdminEventReview() {
     try {
       if (!event) return;
       
-      const supabaseClient = supabase();
-      const { error } = await supabaseClient
+      const supabaseClient = supabase();      const { error } = await supabaseClient
         .from('event_submissions')
-        .update({ status: 'approved' })
-        .eq('id', event.id);
+        .update({ status: 'approved' as const })
+        .match({ id: event.id });
 
       if (error) throw error;
 
@@ -73,11 +68,10 @@ export default function AdminEventReview() {
     try {
       if (!event) return;
       
-      const supabaseClient = supabase();
-      const { error } = await supabaseClient
+      const supabaseClient = supabase();      const { error } = await supabaseClient
         .from('event_submissions')
-        .update({ status: 'rejected' })
-        .eq('id', event.id);
+        .update({ status: 'rejected' as const })
+        .match({ id: event.id });
 
       if (error) throw error;
 

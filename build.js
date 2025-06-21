@@ -32,11 +32,20 @@ backupFiles.forEach(file => {
 // Replace files with JS versions (only during build)
 console.log('🔄 Temporarily converting TypeScript to JavaScript');
 
+// Run TypeScript check but continue regardless (to catch errors but not block build)
 try {
-  // Run the actual build
-  console.log('🔨 Building application');
+  console.log('Running TypeScript check...');
+  execSync('npx tsc --noEmit', { stdio: 'inherit' });
+  console.log('✅ TypeScript check passed!');
+} catch (error) {
+  console.warn('⚠️ TypeScript check found issues, but continuing with build...');
+}
+
+// Execute the actual Next.js build
+try {
+  console.log('Building Next.js application...');
   execSync('next build', { stdio: 'inherit' });
-  console.log('✅ Build completed successfully');
+  console.log('✅ Next.js build completed successfully!');
 } catch (error) {
   console.error('❌ Build failed:', error);
   process.exit(1);

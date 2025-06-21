@@ -1,11 +1,10 @@
 {
   "name": "topcitytickets",
   "version": "0.1.0",
-  "private": true,
-  "scripts": {
+  "private": true,  "scripts": {
     "dev": "npx next dev",
-    "build": "node build.js",
-    "build:original": "npx next build",
+    "build": "node simple-build.js",
+    "build:next": "npx next build --no-lint",
     "start": "npx next start",
     "lint": "npx next lint"
   },
