@@ -7,9 +7,9 @@ import { supabase } from '@/utils/supabase';
 import type { UserRole } from '@/types/auth';
 import type { Database } from '@/types/database.types';
 
-type UserResponse = Database['public']['Tables']['users']['Row'];
-type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
-type GetUserResult = DbResult<ReturnType<typeof supabase>['from']['select'>;
+type UserData = {
+  role: UserRole;
+};
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -18,18 +18,23 @@ export default function Navbar() {
   useEffect(() => {
     const supabaseClient = supabase();
     async function getRole() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session?.user) {
-        const { data: userData } = await supabaseClient
-          .from('users')
-          .select('role')
-          .filter('id', 'eq', session.user.id)
-          .single();
-        
-        if (userData) {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session?.user) {
+          // Simple query with explicit type for the response
+          const { data } = await supabaseClient
+            .from('users')
+            .select('role')
+            .match({ id: session.user.id })
+            .single() as { data: UserData | null };
+          
           setUser(session.user);
-          setUserRole(userData.role);
+          if (data) {
+            setUserRole(data.role);
+          }
         }
+      } catch (err) {
+        console.error('Error fetching user role:', err);
       }
     }
     getRole();

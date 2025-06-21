@@ -95,29 +95,29 @@ export default function AdminEventReview() {
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
-
   return (
-    <div>
-      <h1>Review Event Submission</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Review Event Submission</h1>
       {event && (
-        <Card>
-          <h2>{event.name}</h2>
-          <p>{event.description}</p>
-          <p>
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">{event.name}</h2>
+          <p className="mb-4">{event.description}</p>
+          <p className="mb-2">
             {event.date} at {event.time}
           </p>
-          <p>{event.venue}</p>
-          <p>${event.ticket_price}</p>
-          <Button onClick={handleApprove}>Approve</Button>
-          <Button onClick={handleReject}>Reject</Button>
+          <p className="mb-2">{event.venue}</p>
+          <p className="mb-4">${event.ticket_price}</p>
+          <div className="flex gap-4">
+            <Button onClick={handleApprove}>Approve</Button>
+            <Button onClick={handleReject} variant="destructive">Reject</Button>
+          </div>
         </Card>
       )}
       {event?.status === 'rejected' && (
-        <Alert>
+        <Alert className="mt-4">
           This event has been rejected. {event.admin_feedback && `Reason: ${event.admin_feedback}`}
         </Alert>
       )}
     </div>
   );
-}
 }

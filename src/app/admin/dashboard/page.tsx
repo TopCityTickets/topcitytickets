@@ -3,9 +3,25 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import type { Database } from "@/types/database.types";
+import type { EventStatus } from "@/types/database.types";
 
-type EventSubmission = Database['public']['Tables']['event_submissions']['Row'];
+// Explicitly define the event submission type
+type EventSubmission = {
+  id: string;
+  name: string;
+  description: string;
+  date: string;
+  time: string;
+  venue: string;
+  ticket_price: number;
+  image_url: string | null;
+  slug: string;
+  user_id: string;
+  organizer_email: string;
+  status: EventStatus;
+  admin_feedback: string | null;
+  created_at: string;
+}
 
 export default function AdminDashboard() {
   const [submissions, setSubmissions] = useState<EventSubmission[]>([]);
@@ -20,13 +36,12 @@ export default function AdminDashboard() {
         const { data, error } = await supabaseClient
           .from('event_submissions')
           .select('*')
-          .match({ status: 'pending' }) as { 
-            data: EventSubmission[] | null; 
-            error: any 
-          };
+          .eq('status', 'pending' as EventStatus)
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setSubmissions(data ?? []);
+        // Cast the data to the known type to avoid type issues
+        setSubmissions((data || []) as EventSubmission[]);
       } catch (err) {
         setError('Failed to load submissions');
         console.error(err);

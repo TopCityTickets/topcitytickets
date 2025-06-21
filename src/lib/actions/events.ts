@@ -20,12 +20,23 @@ export type SubmitEventState = {
   success?: boolean;
 };
 
-export async function submitEvent(prevState: any, formData: FormData) {
+export async function submitEvent(prevState: SubmitEventState, formData: FormData): Promise<SubmitEventState> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
+  
   if (!user) {
-    return { error: 'Not authenticated', success: false };
+    return { 
+      success: false,
+      message: 'Not authenticated',
+      errors: { general: ['User not authenticated'] }
+    };
+  }
+  if (!user) {
+    return { 
+      success: false,
+      message: 'Not authenticated',
+      errors: { general: ['User not authenticated'] }
+    };
   }
 
   const eventData = {
@@ -44,7 +55,11 @@ export async function submitEvent(prevState: any, formData: FormData) {
     .from('event_submissions')
     .insert(eventData);
 
-  if (error) return { error: error.message, success: false };
+  if (error) return { 
+    success: false, 
+    message: error.message,
+    errors: { general: [error.message] }
+  };
 
   revalidatePath('/events');
   return { success: true };
