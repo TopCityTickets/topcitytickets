@@ -19,8 +19,17 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo Deployment complete!
-echo Remember to configure these environment variables in Vercel:
+echo.
+echo Your app is now deployed at: https://topcitytickets-blond.vercel.app
+echo.
+echo IMPORTANT: Update these settings in Supabase Dashboard:
+echo 1. Go to Authentication ^> URL Configuration
+echo 2. Set Site URL to: https://topcitytickets-blond.vercel.app
+echo 3. Add Redirect URLs:
+echo    - https://topcitytickets-blond.vercel.app/auth/callback
+echo    - https://topcitytickets-blond.vercel.app/*
+echo.
+echo Environment variables in Vercel should include:
+echo - NEXT_PUBLIC_SITE_URL=https://topcitytickets-blond.vercel.app
 echo - NEXT_PUBLIC_SUPABASE_URL
 echo - NEXT_PUBLIC_SUPABASE_ANON_KEY
-echo - NEXT_PUBLIC_SITE_URL
-echo - SUPABASE_SERVICE_ROLE_KEY

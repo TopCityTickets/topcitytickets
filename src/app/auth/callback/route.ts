@@ -11,5 +11,6 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(requestUrl.origin);
+  // Redirect to your main site
+  return NextResponse.redirect(`${requestUrl.origin}/login?message=Email confirmed! You can now sign in.`);
 }
