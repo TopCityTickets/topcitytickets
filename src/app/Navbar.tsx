@@ -8,6 +8,8 @@ import type { UserRole } from '@/types/auth';
 import type { Database } from '@/types/database.types';
 
 type UserResponse = Database['public']['Tables']['users']['Row'];
+type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
+type GetUserResult = DbResult<ReturnType<typeof supabase>['from']['select'>;
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -21,12 +23,12 @@ export default function Navbar() {
         const { data: userData } = await supabaseClient
           .from('users')
           .select('role')
-          .eq('id', session.user.id)
-          .single() as { data: UserResponse | null };
+          .filter('id', 'eq', session.user.id)
+          .single();
         
         if (userData) {
           setUser(session.user);
-          setUserRole(userData.role as UserRole);
+          setUserRole(userData.role);
         }
       }
     }

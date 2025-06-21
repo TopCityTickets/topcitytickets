@@ -20,11 +20,13 @@ export default function AdminDashboard() {
         const { data, error } = await supabaseClient
           .from('event_submissions')
           .select('*')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false });
+          .match({ status: 'pending' }) as { 
+            data: EventSubmission[] | null; 
+            error: any 
+          };
 
         if (error) throw error;
-        setSubmissions(data || []);
+        setSubmissions(data ?? []);
       } catch (err) {
         setError('Failed to load submissions');
         console.error(err);

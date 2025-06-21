@@ -6,6 +6,11 @@ export const supabase = () => createClientComponentClient<Database>({
     db: {
       schema: 'public'
     },
+    global: {
+      headers: {
+        'x-connection-type': 'pooled'
+      }
+    },
     auth: {
       persistSession: true,
       autoRefreshToken: true

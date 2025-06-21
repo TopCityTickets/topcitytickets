@@ -49,3 +49,5 @@ export async function submitEvent(prevState: any, formData: FormData) {
   revalidatePath('/events');
   return { success: true };
 }
+
+// npm run build

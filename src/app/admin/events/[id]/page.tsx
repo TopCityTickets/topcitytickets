@@ -11,10 +11,11 @@ import { Alert } from '@/components/ui/alert';
 type EventSubmission = Database['public']['Tables']['event_submissions']['Row'];
 
 export default function AdminEventReview() {
+  const params = useParams();
+  const eventId = typeof params.id === 'string' ? params.id : params.id[0];
   const [event, setEvent] = useState<EventSubmission | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { id } = useParams();
   const router = useRouter();
 
   useEffect(() => {
@@ -22,18 +23,14 @@ export default function AdminEventReview() {
       try {
         setLoading(true);
         const supabaseClient = supabase();
-        if (!supabaseClient) {
-          throw new Error('Failed to initialize Supabase client');
-        }
-
         const { data, error } = await supabaseClient
           .from('event_submissions')
-          .select('*')
-          .eq('id', id)
+          .select()
+          .match({ id: eventId })
           .single();
 
         if (error) throw error;
-        if (data) setEvent(data);
+        setEvent(data);
       } catch (err) {
         console.error('Error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load event');
@@ -42,8 +39,10 @@ export default function AdminEventReview() {
       }
     };
 
-    fetchEvent();
-  }, [id]);
+    if (eventId) {
+      fetchEvent();
+    }
+  }, [eventId]);
 
   const handleApprove = async () => {
     try {
@@ -120,4 +119,5 @@ export default function AdminEventReview() {
       )}
     </div>
   );
+}
 }
