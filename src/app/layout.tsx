@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { SupabaseProvider } from '@/components/providers/SupabaseProvider';
-import Header from '@/components/layout/header';
+import Navbar from '@/components/Navbar';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -19,13 +18,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <SupabaseProvider>
-          <Header />
-          <main className="container mx-auto px-4 py-8">
-            {children}
-          </main>
-        </SupabaseProvider>
+        <Navbar />
+        <main className="container mx-auto px-4 py-8">
+          {children}
+        </main>
       </body>
+    </html>
+  );
+}
     </html>
   );
 }

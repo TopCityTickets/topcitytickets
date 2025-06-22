@@ -1,19 +1,14 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Database } from '@/types/database.types'
+import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from '@/types/database.types';
 
-export const supabase = () => createClientComponentClient<Database>({
-  options: {
-    db: {
-      schema: 'public'
-    },
-    global: {
-      headers: {
-        'x-connection-type': 'pooled'
-      }
-    },
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true
-    }
+let supabaseInstance: ReturnType<typeof createBrowserClient<Database>>;
+
+export const supabase = () => {
+  if (!supabaseInstance) {
+    supabaseInstance = createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
   }
-})
+  return supabaseInstance;
+};

@@ -3,6 +3,53 @@ export type EventStatus = 'pending' | 'approved' | 'rejected';
 export type Database = {
   public: {
     Tables: {
+      events: {
+        Row: {
+          id: string
+          name: string
+          description: string
+          date: string
+          time: string
+          venue: string
+          ticket_price: number
+          image_url: string | null
+          slug: string
+          user_id: string
+          organizer_email: string
+          is_approved: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description: string
+          date: string
+          time: string
+          venue: string
+          ticket_price: number
+          image_url?: string | null
+          slug?: string
+          user_id: string
+          organizer_email: string
+          is_approved?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string
+          date?: string
+          time?: string
+          venue?: string
+          ticket_price?: number
+          image_url?: string | null
+          slug?: string
+          user_id?: string
+          organizer_email?: string
+          is_approved?: boolean
+          created_at?: string
+        }
+      }
       event_submissions: {
         Row: {
           id: string

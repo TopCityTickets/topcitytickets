@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-// Add this type export:
 export type SubmitEventState = {
   message?: string | null;
   errors?: {
@@ -24,13 +23,6 @@ export async function submitEvent(prevState: SubmitEventState, formData: FormDat
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    return { 
-      success: false,
-      message: 'Not authenticated',
-      errors: { general: ['User not authenticated'] }
-    };
-  }
   if (!user) {
     return { 
       success: false,
@@ -59,6 +51,14 @@ export async function submitEvent(prevState: SubmitEventState, formData: FormDat
     success: false, 
     message: error.message,
     errors: { general: [error.message] }
+  };
+
+  revalidatePath('/events');
+  return { success: true };
+}
+}
+
+// npm run build
   };
 
   revalidatePath('/events');

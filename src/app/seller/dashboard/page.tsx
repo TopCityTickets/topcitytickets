@@ -1,56 +1,71 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { supabase } from "@/utils/supabase";
+import { useAuth } from "@/hooks/useAuth";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { Database } from "@/types/database.types";
-
-type EventSubmission = Database['public']['Tables']['event_submissions']['Row'];
+import Link from "next/link";
 
 export default function SellerDashboard() {
-  const [submissions, setSubmissions] = useState<EventSubmission[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user, isSeller, loading } = useAuth();
+  const [submissions, setSubmissions] = useState<any[]>([]);
 
   useEffect(() => {
-    async function fetchSubmissions() {
-      try {
-        const supabaseClient = supabase();
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        
-        if (!session?.user?.id) return;
-
-        const { data, error } = await supabaseClient
-          .from('event_submissions')
-          .select('*')
-          .eq('user_id', session.user.id);
-
-        if (error) throw error;
-        setSubmissions(data || []);
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
+    if (user && isSeller) {
+      fetchMySubmissions();
     }
+  }, [user, isSeller]);
 
-    fetchSubmissions();
-  }, []);
+  const fetchMySubmissions = async () => {
+    try {
+      const { data } = await supabase()
+        .from('event_submissions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      
+      setSubmissions(data || []);
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+    }
+  };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <div>Loading...</div>;
+
+  if (!user || !isSeller) {
+    return (
+      <Card className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Seller Access Required</h1>
+        <Link href="/dashboard/profile">
+          <Button>Request Seller Status</Button>
+        </Link>
+      </Card>
+    );
+  }
 
   return (
     <div>
-      <h1>Your Event Submissions</h1>
-      <ul>
+      <h1 className="text-3xl font-bold mb-6">Seller Dashboard</h1>
+      
+      <div className="mb-6">
+        <Link href="/submit-event">
+          <Button>Submit New Event</Button>
+        </Link>
+      </div>
+
+      <h2 className="text-xl mb-4">Your Event Submissions ({submissions.length})</h2>
+      
+      <div className="grid gap-4">
         {submissions.map((submission) => (
-          <li key={submission.id}>
-            <h2>{submission.name}</h2>
-            <p>{submission.description}</p>
-            <p>Status: {submission.status}</p>
-          </li>
+          <Card key={submission.id} className="p-4">
+            <h3 className="font-semibold">{submission.name}</h3>
+            <p className="text-sm">Status: <span className="capitalize">{submission.status}</span></p>
+            <p className="text-sm">${submission.ticket_price}</p>
+            <p className="text-xs text-gray-500">{submission.created_at}</p>
+          </Card>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

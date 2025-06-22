@@ -1,89 +1,89 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabase';
+import { useFormState, useFormStatus } from 'react-dom';
+import { signIn, signUp } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+const initialState = {
+  message: '',
+  error: false,
+};
+
+function SubmitButton({ mode }: { mode: 'signin' | 'signup' }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending} className="w-full">
+      {pending ? 'Loading...' : mode === 'signup' ? 'Sign Up' : 'Sign In'}
+    </Button>
+  );
+}
 
 export default function AuthForm({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const action = mode === 'signup' ? signUp : signIn;
+  const [state, formAction] = useFormState(action, initialState);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    // If already logged in, redirect to dashboard
-    const user = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('currentUser') || 'null' : 'null');
-    if (user) {
-      router.push('/dashboard/profile');
+    if (state?.message) {
+      setMessage(state.message);
     }
-  }, []);
+  }, [state]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
+  return (
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <Card className="w-full max-w-md mx-auto p-6 shadow-xl">
+        <h2 className="text-2xl font-bold text-center mb-4">
+          {mode === 'signup' ? 'Create an Account' : 'Sign In'}
+        </h2>
+        <form action={formAction}>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required />
+            </div>
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required />
+            </div>
+            <SubmitButton mode={mode} />
+          </div>
+        </form>
+        {message && (
+          <div className={`mt-4 p-3 text-sm rounded ${state.error ? 'bg-destructive/20 border-destructive' : 'bg-blue-50 border-blue-200'}`}>
+            {message}
+          </div>
+        )}
 
-    try {
-      const client = supabase();
-      const { data, error } = await client.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-          data: {
-            role: 'user',
-            name,
-          },
-        },
-      });
+        <div className="relative mt-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">
+              Or
+            </span>
+          </div>
+        </div>
 
-      if (error) throw error;
-      setMessage('Check your email for the confirmation link!');
-    } catch (error: any) {
-      setMessage(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const client = supabase();
-      const { data, error } = await client.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      // Redirect will be handled by middleware
-      window.location.href = '/';
-    } catch (error: any) {
-      setMessage(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mode === 'signup' && !name) {
-      setMessage('Name is required for signup.');
-      return;
-    }
-    if (mode === 'signup') {
-      handleSignUp(e);
+        <div className="flex flex-col items-center space-y-2 mt-4">
+          <p className="text-sm text-muted-foreground">
+            {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
+            <Button variant="link" asChild className="text-primary">
+              <Link href={mode === 'signin' ? '/signup' : '/login'}>
+                {mode === 'signin' ? 'Sign Up' : 'Login'}
+              </Link>
+            </Button>
+          </p>
+        </div>
+      </Card>
+    </div>
+  );
+}
     } else {
       handleSignIn(e);
     }

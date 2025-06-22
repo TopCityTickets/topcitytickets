@@ -12,19 +12,22 @@ const nextConfig = {
     // Also ignore warnings during builds
     ignoreDuringBuilds: true,
   },
-  // Make images work properly
-  images: {
-    domains: ['vzndqhzpzdphiiblwplh.supabase.co'],
+  // Necessary for Next.js 14+ with App Router
+  experimental: {
+    // Removed appDir option since it's the default in Next.js 14
   },
-  // Optimization settings
-  swcMinify: true,
-  // Disable unnecessary webpack transformations
+  // Suppress known harmless warnings
   webpack: (config) => {
     config.ignoreWarnings = [
-      { module: /node_modules\/@supabase\/realtime-js/ }
+      { message: /critical dependency/i }
     ];
     return config;
   },
-}
+  // Configure output
+  output: 'standalone',
+};
 
 export default nextConfig;
+  output: 'standalone',
+export default nextConfig
+export default nextConfig

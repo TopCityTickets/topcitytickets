@@ -3,10 +3,9 @@ import type {Config} from 'tailwindcss';
 const config = {
   darkMode: "class", // Changed from ['class'] to "class"
   content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}', // Made this more inclusive
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',  // Make sure this line exists
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     container: {
@@ -16,7 +15,8 @@ const config = {
         "2xl": "1400px",
       },
     },
-    extend: {      fontFamily: {
+    extend: {
+      fontFamily: {
         body: ['var(--font-pt-sans)', 'sans-serif'],
         headline: ['var(--font-poppins)', 'sans-serif'],
         code: ['monospace'],
@@ -102,7 +102,8 @@ const config = {
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 } satisfies Config;
 
+export default config;
 export default config;

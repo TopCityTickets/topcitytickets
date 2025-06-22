@@ -1,69 +1,82 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import type { User } from '@supabase/supabase-js';
-import type { UserRole } from '@/types/auth';
+
+export type UserRole = 'user' | 'seller' | 'admin';
+
+interface AuthState {
+  user: User | null;
+  role: UserRole;
+  loading: boolean;
+}
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<UserRole>('user');
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    role: 'user',
+    loading: true
+  });
 
   useEffect(() => {
     const client = supabase();
-    
+
     // Get initial session
-    const getSession = async () => {
-      const { data: { session } } = await client.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        await getUserRole(session.user.id);
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await client.auth.getSession();
+        if (session?.user) {
+          const role = await getUserRole(session.user.id);
+          setState({ user: session.user, role, loading: false });
+        } else {
+          setState({ user: null, role: 'user', loading: false });
+        }
+      } catch (error) {
+        console.error('Auth error:', error);
+        setState({ user: null, role: 'user', loading: false });
       }
-      setLoading(false);
     };
 
     // Get user role from database
-    const getUserRole = async (userId: string) => {
+    const getUserRole = async (userId: string): Promise<UserRole> => {
       try {
-        const { data, error } = await client
+        const { data } = await client
           .from('users')
           .select('role')
-          .match({ id: userId })
+          .eq('id', userId)
           .single();
-        
-        if (!error && data && typeof data === 'object' && 'role' in data) {
-          setUserRole(data.role as UserRole);
-        }
+        return (data?.role as UserRole) || 'user';
       } catch (error) {
-        console.error('Error fetching user role:', error);
+        console.error('Error fetching role:', error);
+        return 'user';
       }
     };
 
-    // Listen for auth changes
+    // Auth state listener
     const { data: { subscription } } = client.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
-          setUser(session.user);
-          await getUserRole(session.user.id);
+          const role = await getUserRole(session.user.id);
+          setState({ user: session.user, role, loading: false });
         } else {
-          setUser(null);
-          setUserRole('user');
+          setState({ user: null, role: 'user', loading: false });
         }
-        setLoading(false);
       }
     );
 
-    getSession();
+    getInitialSession();
 
     return () => subscription.unsubscribe();
   }, []);
 
   return {
-    user,
-    userRole,
-    loading,
-    isLoading: loading,
-    isAdmin: userRole === 'admin',
-    isSeller: userRole === 'seller',
-    isAuthenticated: !!user
+    user: state.user,
+    role: state.role,
+    loading: state.loading,
+    isAuthenticated: !!state.user,
+    isAdmin: state.role === 'admin',
+    isSeller: state.role === 'seller',
+    isUser: state.role === 'user'
   };
 }

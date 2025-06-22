@@ -36,7 +36,7 @@ export default function EventPage() {
     }
 
     fetchEvent();
-  }, [id]);
+  }, [id, supabaseClient]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;

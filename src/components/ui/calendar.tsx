@@ -52,13 +52,13 @@ export function Calendar({
         ...classNames,
       }}
       components={{
-        // @ts-ignore: Override icons for custom navigation
-        IconLeft: ({ ...props }: any) => <ChevronLeft className="h-4 w-4" {...props} />,
-        // @ts-ignore
-        IconRight: ({ ...props }: any) => <ChevronRight className="h-4 w-4" {...props} />,
+        IconLeft: () => <ChevronLeft className="h-4 w-4" />,
+        IconRight: () => <ChevronRight className="h-4 w-4" />,
       }}
       {...props}
     />
-  )
+  );
+}
+Calendar.displayName = "Calendar";
 }
 Calendar.displayName = "Calendar"

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/utils/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import AuthForm from '@/components/auth/auth-form';
+
+export default function SignUpPage() {
+  return <AuthForm mode="signup" />;
+}
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
