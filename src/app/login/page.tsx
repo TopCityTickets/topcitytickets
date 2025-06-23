@@ -1,147 +1,175 @@
 "use client";
 
-import AuthForm from '@/components/auth/auth-form';
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
-export default function LoginPage() {
-  return <AuthForm mode="signin" />;
-}
-import { Card } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabase";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
+import Image from "next/image";
+import { LogIn, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const message = searchParams.get('message');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    setIsSigningIn(true);
 
     try {
       const client = supabase();
-      const { data: authData, error: authError } = await client.auth.signInWithPassword({
+      const { data, error: authError } = await client.auth.signInWithPassword({
         email,
         password
       });
 
       if (authError) throw authError;
 
-      if (authData.user) {
+      if (data.user) {
+        // Get user role to determine redirect
         const { data: userData } = await client
           .from('users')
           .select('role')
-          .eq('id', authData.user.id)
+          .eq('id', data.user.id)
           .single();
 
-        window.location.href = userData?.role === 'admin' 
-          ? '/admin/dashboard'
-          : userData?.role === 'seller'
-          ? '/seller/dashboard'
-          : '/dashboard';
+        const role = userData?.role || 'user';
+        
+        // Redirect based on role
+        if (role === 'admin') {
+          router.replace('/admin/dashboard');
+        } else {
+          router.replace('/dashboard');
+        }
       }
+      
     } catch (error) {
       console.error('Login error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign in');
-    } finally {
       setLoading(false);
-    }
-  };
+      setIsSigningIn(false);
+    }  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="max-w-md w-full space-y-8 p-6">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-
-        {message && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-            {message}
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <Input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1"
-              disabled={loading}
+    <div className="min-h-screen bg-black flex items-center justify-center py-12 px-4">
+      <Card className="ultra-dark-card max-w-md w-full shadow-2xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <Image 
+              src="https://vzndqhzpzdphiiblwplh.supabase.co/storage/v1/object/public/pub/logo.png" 
+              alt="TopCityTickets Logo" 
+              width={80} 
+              height={80}
+              className="logo-glow"
             />
           </div>
+          <CardTitle className="text-3xl font-black brand-text-gradient">
+            Welcome Back
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Sign in to your TopCityTickets account
+          </CardDescription>
+        </CardHeader>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <Input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1"
-              disabled={loading}
-            />
+        <CardContent className="space-y-6">
+          {message && (
+            <Alert className="border-green-500/50 bg-green-500/10">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <AlertDescription className="text-green-200">
+                {message}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {error && (
+            <Alert className="border-destructive/50 bg-destructive/10">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-destructive-foreground">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Email address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                className="ultra-dark-card border-primary/20 focus:border-primary/50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="ultra-dark-card border-primary/20 focus:border-primary/50"
+              />            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full dark-button-glow"
+              disabled={loading || isSigningIn}
+            >
+              {loading || isSigningIn ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </>
+              )}
+            </Button>
+          </form>
+
+          <div className="text-center pt-4 border-t border-muted/20">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <Link 
+                href="/signup" 
+                className="font-medium text-primary hover:text-primary/80 transition-colors dark-text-glow"
+              >
+                Sign up here
+              </Link>
+            </p>
           </div>
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading}
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </Button>
-        </form>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign up here
-            </Link>
-          </p>
-        </div>
-      </Card>
-    </div>
-  );
-}
-    </div>
-  );
-}
-}
-            onClick={handleLogin}
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </Button>
-        </form>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <a href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign up here
-            </a>
-          </p>
-        </div>
+        </CardContent>
       </Card>
     </div>
   );

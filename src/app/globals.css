@@ -1,76 +1,202 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
- 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
- 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
+    --background: 240 20% 2%; /* Much darker background */
+    --foreground: 210 40% 98%;
+    --card: 240 20% 3%; /* Darker cards */
+    --card-foreground: 210 40% 98%;
+    --popover: 240 20% 3%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 317 100% 60%; /* Hot Pink from logo */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 226 100% 65%; /* Blue from logo */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 20% 8%; /* Darker muted */
+    --muted-foreground: 215 20.2% 55.1%; /* Dimmer text */
+    --accent: 51 100% 50%; /* Gold from logo */
+    --accent-foreground: 240 20% 2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
- 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
- 
-    --radius: 0.5rem;
+    --border: 240 20% 12%; /* Darker borders */
+    --input: 240 20% 8%; /* Darker inputs */
+    --ring: 317 100% 60%;
+    --radius: 0.75rem;
   }
- 
+
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 240 20% 1%; /* Ultra dark background */
     --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
+    --card: 240 20% 2%; /* Ultra dark cards */
     --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
+    --popover: 240 20% 2%;
     --popover-foreground: 210 40% 98%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
+    --primary: 317 100% 60%; /* Keep vibrant primary */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 226 100% 65%; /* Keep vibrant secondary */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 20% 6%; /* Darker muted */
+    --muted-foreground: 215 20.2% 50.1%; /* Dimmer text */
+    --accent: 51 100% 50%; /* Keep vibrant accent */
+    --accent-foreground: 240 20% 1%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 240 20% 8%; /* Much darker borders */
+    --input: 240 20% 6%; /* Much darker inputs */
+    --ring: 317 100% 60%;
   }
 }
- 
+
 @layer base {
   * {
-    @apply border-border;
+    @apply border-0;
+  }
+  html {
+    @apply bg-black;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-black text-white;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md inline-flex items-center justify-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .card {
+    @apply rounded-lg border p-4 shadow-sm;
+  }
+  /* TopCityTickets Dark Theme Brand Classes */
+  .brand-gradient {
+    background: linear-gradient(135deg, #E946E7 0%, #4F7CFF 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+  .brand-gradient-dark {
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a0d3d 30%, #2d1b69 60%, #0a0a1a 100%);
+    background-size: 300% 300%;
+    animation: gradient-shift 4s ease infinite;
+  }
+
+  .brand-text-gradient {
+    background: linear-gradient(135deg, #E946E7 0%, #4F7CFF 50%, #FFD700 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+  .dark-hero-bg {
+    background: radial-gradient(ellipse at center, #1a0d3d 0%, #0f0827 40%, #020204 80%, #000000 100%);
+    position: relative;
+    min-height: 100vh;
+  }
+  .dark-hero-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 20% 30%, rgba(233, 70, 231, 0.2) 2px, transparent 2px),
+      radial-gradient(circle at 70% 20%, rgba(79, 124, 255, 0.2) 2px, transparent 2px),
+      radial-gradient(circle at 40% 70%, rgba(255, 215, 0, 0.15) 2px, transparent 2px),
+      radial-gradient(circle at 80% 80%, rgba(255, 107, 107, 0.15) 2px, transparent 2px);
+    background-size: 80px 80px, 90px 90px, 60px 60px, 75px 75px;
+    animation: confetti-fall 12s linear infinite;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  .confetti-bg {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .confetti-bg::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background-image: 
+      radial-gradient(circle at 20% 30%, #E946E7 2px, transparent 2px),
+      radial-gradient(circle at 70% 20%, #4F7CFF 2px, transparent 2px),
+      radial-gradient(circle at 40% 70%, #FFD700 2px, transparent 2px),
+      radial-gradient(circle at 80% 80%, #FF6B6B 2px, transparent 2px);
+    background-size: 50px 50px, 60px 60px, 40px 40px, 55px 55px;
+    animation: confetti-fall 8s linear infinite;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .logo-glow {
+    filter: drop-shadow(0 0 20px rgba(233, 70, 231, 0.5));
+    transition: filter 0.3s ease;
+  }
+
+  .logo-glow:hover {
+    filter: drop-shadow(0 0 30px rgba(233, 70, 231, 0.8));
+  }
+
+  /* Ultra Dark Theme Extensions */
+  .ultra-dark-card {
+    background: rgba(15, 8, 39, 0.6);
+    border: 1px solid rgba(233, 70, 231, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .ultra-dark-card:hover {
+    background: rgba(15, 8, 39, 0.8);
+    border: 1px solid rgba(233, 70, 231, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(233, 70, 231, 0.2);
+  }
+
+  .dark-navbar {
+    background: rgba(2, 2, 4, 0.95);
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(233, 70, 231, 0.2);
+  }
+
+  .dark-text-glow {
+    text-shadow: 0 0 10px rgba(233, 70, 231, 0.3);
+  }
+
+  .dark-button-glow {
+    box-shadow: 0 0 20px rgba(233, 70, 231, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .dark-button-glow:hover {
+    box-shadow: 0 0 30px rgba(233, 70, 231, 0.6);
+    transform: scale(1.05);
+  }
+
+  /* Enhanced Animations */
+  @keyframes pulse-glow {
+    0%, 100% { 
+      filter: drop-shadow(0 0 20px rgba(233, 70, 231, 0.3));
+    }
+    50% { 
+      filter: drop-shadow(0 0 40px rgba(233, 70, 231, 0.6));
+    }
+  }
+
+  .pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
   }
 }

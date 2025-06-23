@@ -1,9 +1,7 @@
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database.types';
 
-export const createClient = () => {
-  return createServerActionClient<Database>({ cookies });
-};
+export { createClient };
 
-// ...existing auth functions...
+// Re-export for backward compatibility
+export const createServerActionClient = createClient;

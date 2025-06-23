@@ -176,17 +176,18 @@ interface FormProps<TFormValues extends Record<string, any>> {
   id?: string
 }
 
-export function Form<TFormValues extends Record<string, any>>({
-  schema,
+export function Form<TFormValues extends Record<string, any>>({  schema,
   onSubmit,
   form,
   children,
   className,
   ...props
 }: FormProps<TFormValues>) {
-  const methods = form || useForm<TFormValues>({
+  const defaultForm = useForm<TFormValues>({
     ...(schema && { resolver: zodResolver(schema as any) }),
   })
+  
+  const methods = form || defaultForm
 
   return (
     <FormProvider {...methods}>

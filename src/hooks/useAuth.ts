@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -18,25 +18,11 @@ export function useAuth() {
     role: 'user',
     loading: true
   });
+  const initialized = useRef(false);
 
   useEffect(() => {
+    let mounted = true;
     const client = supabase();
-
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const { data: { session } } = await client.auth.getSession();
-        if (session?.user) {
-          const role = await getUserRole(session.user.id);
-          setState({ user: session.user, role, loading: false });
-        } else {
-          setState({ user: null, role: 'user', loading: false });
-        }
-      } catch (error) {
-        console.error('Auth error:', error);
-        setState({ user: null, role: 'user', loading: false });
-      }
-    };
 
     // Get user role from database
     const getUserRole = async (userId: string): Promise<UserRole> => {
@@ -53,11 +39,36 @@ export function useAuth() {
       }
     };
 
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await client.auth.getSession();
+        if (!mounted) return;
+        
+        if (session?.user) {
+          const role = await getUserRole(session.user.id);
+          if (!mounted) return;
+          setState({ user: session.user, role, loading: false });
+        } else {
+          setState({ user: null, role: 'user', loading: false });
+        }
+        initialized.current = true;
+      } catch (error) {
+        console.error('Auth error:', error);
+        if (!mounted) return;
+        setState({ user: null, role: 'user', loading: false });
+        initialized.current = true;
+      }
+    };
+
     // Auth state listener
     const { data: { subscription } } = client.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         if (session?.user) {
           const role = await getUserRole(session.user.id);
+          if (!mounted) return;
           setState({ user: session.user, role, loading: false });
         } else {
           setState({ user: null, role: 'user', loading: false });
@@ -65,10 +76,15 @@ export function useAuth() {
       }
     );
 
-    getInitialSession();
+    if (!initialized.current) {
+      getInitialSession();
+    }
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []); // Remove the initialized dependency
 
   return {
     user: state.user,

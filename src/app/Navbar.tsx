@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/utils/supabase";
@@ -62,103 +63,54 @@ export default function Navbar() {
     const supabaseClient = supabase();
     await supabaseClient.auth.signOut();
     window.location.href = '/';
-  };
-
-  return (
-    <nav className="border-b">
-      <div className="container mx-auto flex justify-between items-center p-4">
-        <Link href="/" className="font-bold text-xl">TopCityTickets</Link>
-        <div className="flex gap-4">
+  };  return (
+    <nav className="dark-navbar sticky top-0 z-50 shadow-2xl">
+      <div className="container mx-auto flex justify-between items-center p-4">        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <Image 
+            src="https://vzndqhzpzdphiiblwplh.supabase.co/storage/v1/object/public/pub/logo.png" 
+            alt="TopCityTickets Logo" 
+            width={50} 
+            height={50}
+            className="logo-glow pulse-glow"
+          />
+          <span className="brand-text-gradient text-2xl font-black tracking-tight dark-text-glow">
+            TopCityTickets
+          </span>
+        </Link><div className="flex gap-4 items-center">
+          <Link href="/events" className="text-muted-foreground hover:text-primary transition-colors font-medium">
+            Events
+          </Link>
+          
           {user ? (
             <>
-              <Button variant="ghost" asChild>
-                <Link href="/events">Events</Link>
-              </Button>
               {userRole === 'admin' && (
-                <Button variant="ghost" asChild>
-                  <Link href="/admin/dashboard">Admin</Link>
+                <Button variant="ghost" asChild className="hover:bg-primary/10">
+                  <Link href="/admin/dashboard">Admin Dashboard</Link>
                 </Button>
               )}
               {userRole === 'seller' && (
-                <Button variant="ghost" asChild>
-                  <Link href="/seller/dashboard">Seller</Link>
+                <Button variant="ghost" asChild className="hover:bg-primary/10">
+                  <Link href="/seller/dashboard">Seller Dashboard</Link>
                 </Button>
               )}
-              <Button variant="outline" onClick={handleSignOut}>
-                Logout ({user.email})
+              {userRole === 'user' && (
+                <Button variant="ghost" asChild className="hover:bg-primary/10">
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleSignOut} className="border-primary/30 hover:bg-primary/10">
+                Sign Out ({user.email?.split('@')[0]})
               </Button>
             </>
           ) : (
             <>
-              <Button variant="ghost" asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-              <Button variant="default" asChild>
+              <Button variant="ghost" asChild className="hover:bg-primary/10">
+                <Link href="/login">Sign In</Link>
+              </Button>              <Button asChild className="brand-gradient dark-button-glow text-white font-semibold hover:opacity-90 transition-all">
                 <Link href="/signup">Sign Up</Link>
               </Button>
             </>
           )}
-        </div>
-      </div>
-    </nav>
-  );
-}
-    </nav>
-  );
-}
-          </div>
-        </div>
-      </nav>
-    );
-  }
-
-  return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-blue-600">
-              TopCityTickets
-            </Link>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Link href="/events" className="text-gray-700 hover:text-blue-600">
-              Events
-            </Link>
-            
-            {user ? (
-              <>
-                {userRole === 'admin' && (
-                  <Link href="/admin/dashboard" className="text-gray-700 hover:text-blue-600">
-                    Admin Dashboard
-                  </Link>
-                )}
-                {userRole === 'seller' && (
-                  <Link href="/seller/dashboard" className="text-gray-700 hover:text-blue-600">
-                    Seller Dashboard
-                  </Link>
-                )}
-                {userRole === 'user' && (
-                  <Link href="/dashboard" className="text-gray-700 hover:text-blue-600">
-                    Dashboard
-                  </Link>
-                )}
-                <Button onClick={handleSignOut} variant="outline">
-                  Sign Out ({user.email})
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="outline">Sign In</Button>
-                </Link>
-                <Link href="/signup">
-                  <Button>Sign Up</Button>
-                </Link>
-              </>
-            )}
-          </div>
         </div>
       </div>
     </nav>

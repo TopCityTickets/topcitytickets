@@ -1,7 +1,8 @@
-import { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Navbar from '@/components/Navbar';
 import './globals.css';
+import { Inter } from 'next/font/google';
+import type { Metadata } from 'next';
+import Navbar from '@/components/Navbar';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -14,18 +15,15 @@ export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
-}) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
+}) {  return (
+    <html lang="en" className="dark">
+      <body className={`${inter.className} bg-black text-white min-h-screen`}>        <AuthProvider>
+          <Navbar />
+          <main>
+            {children}
+          </main>
+        </AuthProvider>
       </body>
-    </html>
-  );
-}
     </html>
   );
 }

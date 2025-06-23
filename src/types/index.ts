@@ -1,3 +1,8 @@
+export * from './events';
+export * from './auth';
+export type { Database } from './database.types';
+
+// Legacy type definitions (deprecated - use Database types instead)
 export type Event = {
   id: string;
   name: string;
@@ -5,10 +10,11 @@ export type Event = {
   time: string; // e.g., "HH:MM"
   venue: string;
   description: string;
-  ticketPrice: number;
-  imageUrl?: string;
-  organizerEmail: string; // For internal use/contact
+  ticket_price: number;
+  image_url?: string;
+  organizer_email: string; // For internal use/contact
   slug: string; // for URL
+  user_id: string;
+  is_approved: boolean;
+  created_at: string;
 };
-
-// Add more types as needed

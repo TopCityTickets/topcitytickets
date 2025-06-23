@@ -12,12 +12,11 @@ interface EventCardProps {
 
 export default function EventCard({ event }: EventCardProps) {
   return (
-    <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
-      <CardHeader className="p-0 relative">
-        {event.imageUrl && (
+    <Card className="flex flex-col h-full overflow-hidden ultra-dark-card shadow-lg hover:shadow-2xl transition-all duration-300 rounded-lg">      <CardHeader className="p-0 relative">
+        {event.image_url && (
           <Link href={`/events/${event.slug}`}>
             <Image
-              src={event.imageUrl}
+              src={event.image_url}
               alt={event.name}
               width={400}
               height={250}
@@ -44,18 +43,16 @@ export default function EventCard({ event }: EventCardProps) {
         <CardDescription className="mt-3 text-sm line-clamp-3">
           {event.description}
         </CardDescription>
-      </CardContent>
-      <CardFooter className="p-6 border-t flex justify-between items-center">
-        {event.ticketPrice > 0 ? (
+      </CardContent>      <CardFooter className="p-6 border-t flex justify-between items-center">
+        {event.ticket_price > 0 ? (
           <Badge variant="secondary" className="text-lg font-semibold">
-            ${event.ticketPrice.toFixed(2)}
+            ${event.ticket_price.toFixed(2)}
           </Badge>
         ) : (
           <Badge variant="default" className="text-lg font-semibold bg-green-600 text-white">
             FREE
           </Badge>
-        )}
-        <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
+        )}        <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 dark-button-glow">
           <Link href={`/events/${event.slug}`}>
             <TicketIcon className="mr-2 h-4 w-4" />
             View Details

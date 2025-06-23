@@ -30,17 +30,17 @@ export async function submitEvent(prevState: SubmitEventState, formData: FormDat
       errors: { general: ['User not authenticated'] }
     };
   }
-
   const eventData = {
     name: formData.get('name'),
     description: formData.get('description'),
     date: formData.get('date'),
     time: formData.get('time'),
     venue: formData.get('venue'),
-    ticket_price: Number(formData.get('ticket_price')),
-    organizer_email: formData.get('organizer_email'),
+    ticket_price: Number(formData.get('ticketPrice')),
+    organizer_email: formData.get('organizerEmail'),
+    image_url: formData.get('imageUrl') || null,
     user_id: user.id,
-    status: 'pending',
+    status: 'pending' as const,
   };
 
   const { error } = await supabase
@@ -54,15 +54,5 @@ export async function submitEvent(prevState: SubmitEventState, formData: FormDat
   };
 
   revalidatePath('/events');
-  return { success: true };
+  return { success: true, message: 'Event submitted successfully!' };
 }
-}
-
-// npm run build
-  };
-
-  revalidatePath('/events');
-  return { success: true };
-}
-
-// npm run build

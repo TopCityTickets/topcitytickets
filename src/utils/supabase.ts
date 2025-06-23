@@ -1,14 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@/types/database.types';
 
-let supabaseInstance: ReturnType<typeof createBrowserClient<Database>>;
-
-export const supabase = () => {
-  if (!supabaseInstance) {
-    supabaseInstance = createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-  }
-  return supabaseInstance;
-};
+export function supabase() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}

@@ -1,10 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase } from "@/utils/supabase";
+import { createContext, useContext, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@supabase/supabase-js";
-import type { Database } from "@/types/database.types";
 import type { UserRole } from "@/hooks/useAuth";
 
 interface AuthContextType {
@@ -31,28 +29,3 @@ export function useAuthContext() {
   }
   return context;
 }
-      }
-    };
-
-    // subscribe to changes
-    const { data: subs } = client.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        const { data } = await client
-          .from<Database["public"]["Tables"]["users"]["Row"]>("users")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
-        setState({ user: session.user, role: data?.role || "user", loading: false });
-      } else {
-        setState({ user: null, role: "user", loading: false });
-      }
-    });
-
-    init();
-    return () => subs.subscription.unsubscribe();
-  }, [client]);
-
-  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
-}
-
-export const useAuth = () => useContext(AuthContext);
