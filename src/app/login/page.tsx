@@ -38,22 +38,41 @@ export default function LoginPage() {
         password
       });
 
-      if (authError) throw authError;
+      if (authError) throw authError;      if (data.user) {
+        // Get user role to determine redirect, with fallback for missing users
+        try {
+          const { data: userData, error: userError } = await client
+            .from('users')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
 
-      if (data.user) {
-        // Get user role to determine redirect
-        const { data: userData } = await client
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-
-        const role = userData?.role || 'user';
-        
-        // Redirect based on role
-        if (role === 'admin') {
-          router.replace('/admin/dashboard');
-        } else {
+          if (userError && userError.code === 'PGRST116') {
+            // User doesn't exist in public.users, create them
+            await client
+              .from('users')
+              .insert({
+                id: data.user.id,
+                email: data.user.email!,
+                role: 'user',
+                created_at: data.user.created_at
+              });
+            
+            // Default to user role
+            router.replace('/dashboard');
+          } else {
+            const role = userData?.role || 'user';
+            
+            // Redirect based on role
+            if (role === 'admin') {
+              router.replace('/admin/dashboard');
+            } else {
+              router.replace('/dashboard');
+            }
+          }
+        } catch (roleError) {
+          console.error('Role check error:', roleError);
+          // Default redirect on any error
           router.replace('/dashboard');
         }
       }

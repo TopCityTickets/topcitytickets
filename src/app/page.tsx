@@ -14,8 +14,19 @@ type Event = Database['public']['Tables']['events']['Row'];
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
+    // Check for auth success parameter and force refresh if needed
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auth_success') === 'true') {
+      // Remove the parameter and force a clean state refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('auth_success');
+      window.history.replaceState({}, '', url.toString());
+      // Small delay to ensure auth state propagates
+      setTimeout(() => window.location.reload(), 100);
+      return;
+    }
+
     const fetchEvents = async () => {
       const supabaseClient = supabase();
       const { data } = await supabaseClient

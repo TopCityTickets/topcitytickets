@@ -14,8 +14,9 @@ interface SellerApplication {
   id: string;
   user_id: string;
   status: 'pending' | 'approved' | 'rejected';
-  applied_at: string;
-  users: {
+  applied_at?: string;
+  created_at?: string;
+  users?: {
     email: string;
   };
 }
@@ -52,10 +53,12 @@ export default function AdminDashboard() {
       console.error('Error fetching submissions:', error);
     }
   };
-
   const fetchApplications = async () => {
     try {
-      const { data } = await supabase()
+      console.log('Fetching seller applications...');
+      
+      // Try the nested query first
+      const { data: nestedData, error: nestedError } = await supabase()
         .from('seller_applications')
         .select(`
           *,
@@ -65,9 +68,46 @@ export default function AdminDashboard() {
         `)
         .order('applied_at', { ascending: false });
       
-      setApplications(data || []);
+      if (nestedError) {
+        console.warn('Nested query failed, trying manual join:', nestedError);
+        
+        // Fallback to manual join
+        const { data: manualData, error: manualError } = await supabase()
+          .from('seller_applications')
+          .select('*')
+          .order('applied_at', { ascending: false });
+        
+        if (manualError) {
+          console.error('Manual query also failed:', manualError);
+          setApplications([]);
+          return;
+        }
+        
+        // Get user emails separately
+        const applicationsWithEmails = await Promise.all(
+          (manualData || []).map(async (app) => {
+            const { data: userData } = await supabase()
+              .from('users')
+              .select('email')
+              .eq('id', app.user_id)
+              .single();
+            
+            return {
+              ...app,
+              users: userData ? { email: userData.email } : { email: 'Unknown' }
+            };
+          })
+        );
+        
+        console.log('Manual join successful, applications:', applicationsWithEmails);
+        setApplications(applicationsWithEmails);
+      } else {
+        console.log('Nested query successful, applications:', nestedData);
+        setApplications(nestedData || []);
+      }
     } catch (error) {
       console.error('Error fetching applications:', error);
+      setApplications([]);
     }
   };
 
@@ -245,8 +285,7 @@ export default function AdminDashboard() {
               <CardDescription>
                 Review and approve seller applications from users
               </CardDescription>
-            </CardHeader>
-            <CardContent>
+            </CardHeader>            <CardContent>
               {applications.length === 0 ? (
                 <div className="text-center py-8">
                   <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -258,10 +297,14 @@ export default function AdminDashboard() {
                     <Card key={app.id} className="ultra-dark-card">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold">{app.users.email}</p>
+                          <div>                            <p className="font-semibold">{app.users?.email || 'Unknown user'}</p>
                             <p className="text-sm text-muted-foreground">
-                              Applied: {new Date(app.applied_at).toLocaleDateString()}
+                              Applied: {app.applied_at 
+                                ? new Date(app.applied_at).toLocaleDateString() 
+                                : app.created_at 
+                                  ? new Date(app.created_at).toLocaleDateString()
+                                  : 'Unknown date'
+                              }
                             </p>
                           </div>
                           <div className="flex items-center gap-2">

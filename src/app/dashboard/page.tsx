@@ -4,15 +4,54 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import Link from 'next/link';
-import { User, ShoppingCart, Settings, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { User, ShoppingCart, Settings, FileText, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 
 export default function UserDashboard() {
   const { user, role, loading, isAdmin, isSeller } = useAuth();
   const [applying, setApplying] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [applicationDetails, setApplicationDetails] = useState<any>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
+
+  // Check for existing application when component mounts
+  useEffect(() => {
+    if (user && !isSeller && !isAdmin) {
+      checkApplicationStatus();
+    }
+  }, [user, isSeller, isAdmin]);
+
+  // Function to check if user has a pending application
+  const checkApplicationStatus = async () => {
+    if (!user) return;
+    
+    setCheckingStatus(true);
+    try {
+      const { data, error } = await supabase()
+        .from('seller_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('applied_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        if (error.code !== 'PGRST116') { // No rows returned
+          console.error('Error checking application status:', error);
+        }
+        setApplicationStatus('none');
+      } else if (data) {
+        setApplicationStatus(data.status as any);
+        setApplicationDetails(data);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -54,25 +93,32 @@ export default function UserDashboard() {
   const handleApplyForSeller = async () => {
     setApplying(true);
     try {
+      // Get the current session token
       const supabaseClient = supabase();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       
-      // Insert seller application
-      const { error } = await supabaseClient
-        .from('seller_applications')
-        .insert([
-          {
-            user_id: user.id,
-            status: 'pending',
-            applied_at: new Date().toISOString()
-          }
-        ]);
+      if (!session?.access_token) {
+        alert('Please log in again to apply for seller status.');
+        return;
+      }
 
-      if (error) {
-        console.error('Application error:', error);
-        alert('Error submitting application. Please try again.');
-      } else {
+      const response = await fetch('/api/apply-seller', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
         setApplicationStatus('pending');
-        alert('Application submitted successfully! We\'ll review it shortly.');
+        alert('Application submitted successfully! An admin will review it shortly.');
+      } else {
+        console.error('Application error:', data);
+        // Show detailed error for debugging
+        alert(`Error: ${data.message || data.error}\n\nDetails: ${data.details || 'No additional details'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -205,15 +251,29 @@ export default function UserDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {applicationStatus === 'pending' ? (
-                <div className="text-center">
+              {checkingStatus ? (
+                <div className="text-center p-4">
+                  <div className="w-6 h-6 border-2 border-t-transparent border-secondary rounded-full animate-spin mx-auto"></div>
+                  <p className="text-sm text-muted-foreground mt-2">Checking status...</p>
+                </div>
+              ) : applicationStatus === 'pending' ? (
+                <div className="text-center p-2">
                   <Clock className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Application pending review</p>
+                  <p className="font-medium text-yellow-500">Application Pending</p>
+                  <p className="text-xs text-muted-foreground mt-1">Submitted on {applicationDetails?.applied_at ? new Date(applicationDetails.applied_at).toLocaleDateString() : 'recently'}</p>
+                  <p className="text-sm text-muted-foreground mt-2">An admin will review your application soon</p>
                 </div>
               ) : applicationStatus === 'approved' ? (
-                <div className="text-center">
+                <div className="text-center p-2">
                   <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Application approved!</p>
+                  <p className="font-medium text-green-500">Application Approved!</p>
+                  <p className="text-sm text-muted-foreground mt-2">Please refresh the page to access seller features</p>
+                </div>
+              ) : applicationStatus === 'rejected' ? (
+                <div className="text-center p-2">
+                  <XCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
+                  <p className="font-medium text-destructive">Application Rejected</p>
+                  <p className="text-sm text-muted-foreground mt-2">Contact support for more information</p>
                 </div>
               ) : (
                 <Button 
@@ -222,7 +282,7 @@ export default function UserDashboard() {
                   className="w-full"
                   variant="outline"
                 >
-                  {applying ? 'Submitting...' : 'Apply for Seller Status'}
+                  {applying ? 'Applying...' : 'Apply to Become a Seller'}
                 </Button>
               )}
             </CardContent>

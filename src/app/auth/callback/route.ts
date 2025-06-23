@@ -26,10 +26,12 @@ export async function GET(request: NextRequest) {
           },
         },
       }
-    );
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    );    const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Force a page refresh after successful auth to ensure navbar updates
+      const redirectUrl = new URL(`${origin}${next}`);
+      redirectUrl.searchParams.set('auth_success', 'true');
+      return NextResponse.redirect(redirectUrl);
     }
   }
 
