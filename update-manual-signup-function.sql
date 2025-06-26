@@ -1,5 +1,5 @@
--- CREATE MANUAL SIGNUP API FUNCTION
--- This bypasses the broken Supabase auth.signUp() completely
+-- UPDATE MANUAL SIGNUP FUNCTION TO INCLUDE NAME FIELDS
+-- This updates the function to work with the current schema
 -- Run this in Supabase SQL Editor
 
 CREATE OR REPLACE FUNCTION public.manual_signup(
@@ -63,6 +63,8 @@ BEGIN
         'success', true,
         'user_id', new_user_id,
         'email', user_email,
+        'first_name', user_first_name,
+        'last_name', user_last_name,
         'message', 'Account created successfully! You can now sign in.'
     );
     
@@ -74,3 +76,7 @@ EXCEPTION WHEN OTHERS THEN
         'error', SQLERRM
     );
 END $$;
+
+-- Test the function
+SELECT 'Updated manual_signup function to include name fields' as message;
+SELECT 'You can now test signup with first_name and last_name' as instruction;

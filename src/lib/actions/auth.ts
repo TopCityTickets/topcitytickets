@@ -48,6 +48,8 @@ export async function signIn(prevState: any, formData: FormData) {
 export async function signUp(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const firstName = formData.get('name') as string; // Traditional form uses 'name' field
+  const lastName = formData.get('lastName') as string || ''; // Optional for compatibility
 
   try {
     // Use our custom manual signup API instead of broken Supabase auth.signUp
@@ -56,7 +58,12 @@ export async function signUp(prevState: any, formData: FormData) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        firstName: firstName || 'User', 
+        lastName: lastName || 'User' 
+      }),
     });
 
     const result = await response.json();

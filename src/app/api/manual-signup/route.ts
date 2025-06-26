@@ -5,15 +5,22 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, firstName, lastName } = await request.json();
 
-    console.log('Manual signup attempt for:', email);
+    console.log('Manual signup attempt for:', email, 'with name:', firstName, lastName);
 
     // Validate input
     if (!email || !password) {
       return NextResponse.json({ 
         success: false, 
         error: 'Email and password are required'
+      }, { status: 400 });
+    }
+
+    if (!firstName || !lastName) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'First name and last name are required'
       }, { status: 400 });
     }
 
@@ -39,7 +46,9 @@ export async function POST(request: NextRequest) {
     // Call our manual signup function
     const { data, error } = await supabase.rpc('manual_signup', {
       user_email: email,
-      user_password: password
+      user_password: password,
+      user_first_name: firstName,
+      user_last_name: lastName
     });
 
     console.log('Manual signup result:', { data, error });
