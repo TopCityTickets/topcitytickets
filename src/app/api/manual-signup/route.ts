@@ -43,6 +43,21 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    // First check if the user already exists
+    const { data: checkData, error: checkError } = await supabase.rpc('check_user_exists', {
+      email_to_check: email
+    });
+
+    console.log('User check result:', checkData);
+
+    if (checkData?.exists_in_auth && checkData?.exists_in_public) {
+      console.log('User already exists in both auth and public tables');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'An account with this email already exists. Please log in instead.' 
+      }, { status: 400 });
+    }
+
     // Call our manual signup function
     const { data, error } = await supabase.rpc('manual_signup', {
       user_email: email,
@@ -55,6 +70,15 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Manual signup error:', error);
+      
+      // Handle common error messages more user-friendly
+      if (error.message.includes('violates unique constraint')) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'An account with this email already exists. Please log in instead.' 
+        }, { status: 400 });
+      }
+      
       return NextResponse.json({ 
         success: false, 
         error: error.message 
