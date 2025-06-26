@@ -7,14 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import Link from 'next/link';
-import { User, ShoppingCart, Settings, FileText, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { User, ShoppingCart, Settings, FileText, CheckCircle, Clock, AlertCircle, XCircle, RefreshCw } from 'lucide-react';
 
 export default function UserDashboard() {
   const { user, role, loading, isAdmin, isSeller } = useAuth();
-  const [applying, setApplying] = useState(false);
-  const [applicationStatus, setApplicationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
-  const [applicationDetails, setApplicationDetails] = useState<any>(null);
-  const [checkingStatus, setCheckingStatus] = useState(false);
+  const router = useRouter();
+  const [applying, setApplying] = useState(false);  const [applicationStatus, setApplicationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [applicationDetails, setApplicationDetails] = useState<any>(null);  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [refundingTickets, setRefundingTickets] = useState<Set<string>>(new Set());
+
+  // Redirect sellers to their seller dashboard
+  useEffect(() => {
+    if (!loading && isSeller) {
+      router.replace('/seller/dashboard');
+    }
+  }, [loading, isSeller, router]);
 
   // Check for existing application when component mounts
   useEffect(() => {
@@ -51,6 +61,107 @@ export default function UserDashboard() {
     } finally {
       setCheckingStatus(false);
     }
+  };
+
+  // Fetch user's tickets
+  useEffect(() => {
+    if (user) {
+      fetchUserTickets();
+    }
+  }, [user]);
+
+  const fetchUserTickets = async () => {
+    if (!user) return;
+    
+    setLoadingTickets(true);
+    try {
+      const { data, error } = await supabase()        .from('tickets')
+        .select(`
+          *,
+          events (
+            id,
+            name,
+            date,
+            time,
+            venue,
+            image_url,
+            created_by
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('purchased_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching tickets:', error);
+      } else {
+        setTickets(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const handleRefundTicket = async (ticketId: string) => {
+    if (!user) return;
+    
+    if (!confirm('Are you sure you want to refund this ticket? This action cannot be undone.')) {
+      return;
+    }
+    
+    setRefundingTickets(prev => new Set(prev).add(ticketId));
+    
+    try {
+      const supabaseClient = supabase();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      if (!session?.access_token) {
+        alert('Please log in again to refund tickets.');
+        return;
+      }
+
+      const response = await fetch('/api/refund-ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ ticketId }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('Ticket refunded successfully!');
+        // Refresh tickets list
+        fetchUserTickets();
+      } else {
+        console.error('Refund error:', data);
+        alert(`Error: ${data.error || 'Failed to refund ticket'}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error processing refund. Please try again.');
+    } finally {
+      setRefundingTickets(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ticketId);
+        return newSet;
+      });
+    }
+  };
+
+  const canRefundTicket = (ticket: any) => {
+    // Only allow refund if ticket is valid (not already refunded or used)
+    if (ticket.status !== 'valid') return false;
+    
+    // Check if event hasn't started yet
+    const eventDateTime = new Date(`${ticket.events?.date} ${ticket.events?.time}`);
+    const now = new Date();
+    if (eventDateTime <= now) return false;
+    
+    // Admin can refund any ticket, or event creator can refund their event tickets
+    return isAdmin || ticket.events?.created_by === user?.id;
   };
 
   if (loading) {
@@ -218,9 +329,7 @@ export default function UserDashboard() {
               </Button>
             </CardContent>
           </Card>
-        )}
-
-        {isSeller && (
+        )}        {isSeller && (
           <Card className="ultra-dark-card border-primary/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
@@ -233,7 +342,7 @@ export default function UserDashboard() {
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full dark-button-glow">
-                <Link href="/submit-event">Submit Event</Link>
+                <Link href="/seller/dashboard">Go to Seller Dashboard</Link>
               </Button>
             </CardContent>
           </Card>
@@ -284,10 +393,115 @@ export default function UserDashboard() {
                 >
                   {applying ? 'Applying...' : 'Apply to Become a Seller'}
                 </Button>
-              )}
-            </CardContent>
+              )}            </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* My Tickets Section */}
+      <div className="mt-8">
+        <Card className="ultra-dark-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              My Tickets
+            </CardTitle>
+            <CardDescription>
+              View and manage your purchased event tickets
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingTickets ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-20 bg-muted/30 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : tickets.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">No tickets purchased yet</p>
+                <Button asChild variant="outline">
+                  <Link href="/events">Browse Events</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {tickets.map((ticket) => (                  <Card key={ticket.id} className="ultra-dark-card border-muted/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          {ticket.events?.image_url ? (
+                            <img 
+                              src={ticket.events.image_url} 
+                              alt={ticket.events?.name}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-muted/20 rounded-lg flex items-center justify-center">
+                              <FileText className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold text-white">{ticket.events?.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {ticket.events?.date} at {ticket.events?.time}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {ticket.events?.venue}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Purchased: {new Date(ticket.purchased_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge 
+                            variant={
+                              ticket.status === 'valid' ? 'default' :
+                              ticket.status === 'used' ? 'secondary' : 
+                              ticket.status === 'refunded' ? 'outline' :
+                              'destructive'
+                            }
+                            className="mb-2"
+                          >
+                            {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                          </Badge>
+                          <p className="text-lg font-bold text-primary">
+                            ${ticket.purchase_amount}
+                          </p>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Ticket #{ticket.ticket_code.substring(0, 8).toUpperCase()}
+                          </p>
+                          {canRefundTicket(ticket) && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRefundTicket(ticket.id)}
+                              disabled={refundingTickets.has(ticket.id)}
+                              className="text-xs"
+                            >
+                              {refundingTickets.has(ticket.id) ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                                  Refunding...
+                                </>
+                              ) : (
+                                'Refund'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

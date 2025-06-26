@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// Force dynamic generation for this API route
+export const dynamic = 'force-dynamic';
+
 // This is a debug endpoint - should be removed in production
 export async function GET(request: NextRequest) {
   try {

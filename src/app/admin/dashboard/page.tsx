@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
-import { Users, ShoppingCart, Calendar, CheckCircle, XCircle, Clock, Settings } from "lucide-react";
+import { Users, ShoppingCart, Calendar, CheckCircle, XCircle, Clock, Settings, FileText, RefreshCw } from "lucide-react";
 
 interface SellerApplication {
   id: string;
@@ -22,21 +22,23 @@ interface SellerApplication {
 }
 
 export default function AdminDashboard() {
-  const { user, isAdmin, loading } = useAuth();
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const { user, isAdmin, loading } = useAuth();  const [submissions, setSubmissions] = useState<any[]>([]);
   const [applications, setApplications] = useState<SellerApplication[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [refundingTickets, setRefundingTickets] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalSellers: 0,
     pendingApplications: 0,
-    totalEvents: 0
+    totalEvents: 0,
+    totalTickets: 0
   });
 
-  useEffect(() => {
-    if (isAdmin) {
+  useEffect(() => {    if (isAdmin) {
       fetchSubmissions();
       fetchApplications();
       fetchStats();
+      fetchTickets();
     }
   }, [isAdmin]);
 
@@ -130,27 +132,133 @@ export default function AdminDashboard() {
       const { count: pendingApplications } = await client
         .from('seller_applications')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-
-      // Get total events
+        .eq('status', 'pending');      // Get total events
       const { count: totalEvents } = await client
         .from('events')
+        .select('*', { count: 'exact', head: true });
+
+      // Get total tickets
+      const { count: totalTickets } = await client
+        .from('tickets')
         .select('*', { count: 'exact', head: true });
 
       setStats({
         totalUsers: totalUsers || 0,
         totalSellers: totalSellers || 0,
         pendingApplications: pendingApplications || 0,
-        totalEvents: totalEvents || 0
-      });
-    } catch (error) {
+        totalEvents: totalEvents || 0,
+        totalTickets: totalTickets || 0
+      });    } catch (error) {
       console.error('Error fetching stats:', error);
     }
   };
 
+  const fetchTickets = async () => {
+    try {
+      const { data, error } = await supabase()
+        .from('tickets')
+        .select(`
+          *,
+          events (
+            id,
+            name,
+            date,
+            time,
+            venue,
+            created_by
+          ),
+          users (
+            id,
+            email
+          )
+        `)
+        .order('purchased_at', { ascending: false })
+        .limit(50); // Limit to recent 50 tickets for performance
+
+      if (error) {
+        console.error('Error fetching tickets:', error);
+      } else {
+        setTickets(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleRefundTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to refund this ticket? This action cannot be undone.')) {
+      return;
+    }
+    
+    setRefundingTickets(prev => new Set(prev).add(ticketId));
+    
+    try {
+      const supabaseClient = supabase();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      if (!session?.access_token) {
+        alert('Please log in again to refund tickets.');
+        return;
+      }
+
+      const response = await fetch('/api/refund-ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ ticketId }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('Ticket refunded successfully!');
+        // Refresh tickets list and stats
+        fetchTickets();
+        fetchStats();
+      } else {
+        console.error('Refund error:', data);
+        alert(`Error: ${data.error || 'Failed to refund ticket'}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error processing refund. Please try again.');
+    } finally {
+      setRefundingTickets(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ticketId);
+        return newSet;
+      });
+    }
+  };
+
+  const canRefundTicket = (ticket: any) => {
+    // Only allow refund if ticket is valid (not already refunded or used)
+    if (ticket.status !== 'valid') return false;
+    
+    // Check if event hasn't started yet
+    const eventDateTime = new Date(`${ticket.events?.date} ${ticket.events?.time}`);
+    const now = new Date();
+    return eventDateTime > now;
+  };
   const handleApplicationAction = async (applicationId: string, action: 'approved' | 'rejected') => {
     try {
-      const { error } = await supabase()
+      // First, get the application to find the user_id
+      const { data: application, error: fetchError } = await supabase()
+        .from('seller_applications')
+        .select('user_id')
+        .eq('id', applicationId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching application:', fetchError);
+        alert('Error fetching application');
+        return;
+      }
+
+      // Update the application status
+      const { error: updateError } = await supabase()
         .from('seller_applications')
         .update({ 
           status: action,
@@ -159,17 +267,31 @@ export default function AdminDashboard() {
         })
         .eq('id', applicationId);
 
-      if (error) {
-        console.error('Error updating application:', error);
+      if (updateError) {
+        console.error('Error updating application:', updateError);
         alert('Error updating application');
         return;
+      }
+
+      // If approved, update the user's role to seller
+      if (action === 'approved' && application?.user_id) {
+        const { error: roleError } = await supabase()
+          .from('users')
+          .update({ role: 'seller' })
+          .eq('id', application.user_id);
+
+        if (roleError) {
+          console.error('Error updating user role:', roleError);
+          alert('Application approved but failed to update user role');
+          return;
+        }
       }
 
       // Refresh applications
       fetchApplications();
       fetchStats();
       
-      alert(`Application ${action} successfully!`);
+      alert(`Application ${action} successfully!${action === 'approved' ? ' User is now a seller.' : ''}`);
     } catch (error) {
       console.error('Error:', error);
       alert('Error updating application');
@@ -218,10 +340,8 @@ export default function AdminDashboard() {
       <div className="mb-8">
         <h1 className="text-4xl font-black brand-text-gradient mb-2">Admin Dashboard</h1>
         <p className="text-muted-foreground">Manage users, sellers, and applications</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      </div>      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Card className="ultra-dark-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -269,13 +389,24 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Main Content */}
+        <Card className="ultra-dark-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Tickets</p>
+                <p className="text-2xl font-bold">{stats.totalTickets}</p>
+              </div>
+              <FileText className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>      {/* Main Content */}
       <Tabs defaultValue="applications" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="applications">Seller Applications</TabsTrigger>
           <TabsTrigger value="events">Event Submissions</TabsTrigger>
+          <TabsTrigger value="tickets">Tickets Management</TabsTrigger>
         </TabsList>
 
         <TabsContent value="applications" className="space-y-4">
@@ -365,10 +496,9 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   {submissions.map((submission) => (
                     <Card key={submission.id} className="ultra-dark-card">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
+                      <CardContent className="p-4">                        <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-semibold">{submission.title}</p>
+                            <p className="font-semibold">{submission.name}</p>
                             <p className="text-sm text-muted-foreground">
                               Submitted: {new Date(submission.created_at).toLocaleDateString()}
                             </p>
@@ -380,6 +510,89 @@ export default function AdminDashboard() {
                           </Button>
                         </div>
                       </CardContent>                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>        </TabsContent>
+
+        <TabsContent value="tickets" className="space-y-4">
+          <Card className="ultra-dark-card">
+            <CardHeader>
+              <CardTitle>Tickets Management</CardTitle>
+              <CardDescription>
+                View and manage all purchased tickets
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {tickets.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No tickets found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {tickets.map((ticket) => (
+                    <Card key={ticket.id} className="ultra-dark-card border-muted/20">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-muted/20 rounded-lg flex items-center justify-center">
+                              <FileText className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-white">{ticket.events?.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {ticket.events?.date} at {ticket.events?.time}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Customer: {ticket.users?.email}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Purchased: {new Date(ticket.purchased_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge 
+                              variant={
+                                ticket.status === 'valid' ? 'default' :
+                                ticket.status === 'used' ? 'secondary' : 
+                                ticket.status === 'refunded' ? 'outline' :
+                                'destructive'
+                              }
+                              className="mb-2"
+                            >
+                              {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                            </Badge>
+                            <p className="text-lg font-bold text-primary">
+                              ${ticket.purchase_amount}
+                            </p>
+                            <p className="text-xs text-muted-foreground mb-3">
+                              #{ticket.ticket_code.substring(0, 8).toUpperCase()}
+                            </p>
+                            {canRefundTicket(ticket) && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRefundTicket(ticket.id)}
+                                disabled={refundingTickets.has(ticket.id)}
+                                className="text-xs"
+                              >
+                                {refundingTickets.has(ticket.id) ? (
+                                  <>
+                                    <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                                    Refunding...
+                                  </>
+                                ) : (
+                                  'Refund'
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               )}

@@ -25,9 +25,11 @@ export default function Navbar() {
             width={50} 
             height={50}
             className="logo-glow pulse-glow"
-          />
-          <span className="brand-text-gradient text-2xl font-black tracking-tight dark-text-glow">
+          />          <span className="brand-text-gradient text-2xl font-black tracking-tight dark-text-glow relative">
             TopCityTickets
+            <span className="absolute -top-1 -right-8 bg-yellow-500 text-black text-xs font-bold px-1.5 py-0.5 rounded-full">
+              BETA
+            </span>
           </span>
         </Link>
 

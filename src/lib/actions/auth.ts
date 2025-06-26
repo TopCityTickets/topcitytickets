@@ -18,6 +18,29 @@ export async function signIn(prevState: any, formData: FormData) {
     return { message: error.message, error: true };
   }
 
+  // Get user role to redirect to appropriate dashboard
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const role = userData?.role;
+    
+    revalidatePath('/', 'layout');
+    
+    // Redirect based on role
+    if (role === 'admin') {
+      redirect('/admin/dashboard');
+    } else if (role === 'seller') {
+      redirect('/seller/dashboard');
+    } else {
+      redirect('/dashboard');
+    }
+  }
+
   revalidatePath('/', 'layout');
   redirect('/');
 }

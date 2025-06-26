@@ -52,19 +52,26 @@ export default function Home() {
               className="logo-glow pulse-glow"
             />
           </div>
-          
-          <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tight">
+            <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tight relative">
             TOP<span className="text-accent">CITY</span>
             <br />
             <span className="brand-text-gradient">
               Tickets
             </span>
+            <span className="absolute -top-4 -right-4 bg-yellow-500 text-black text-lg font-bold px-3 py-1 rounded-full animate-pulse">
+              BETA
+            </span>
           </h1>
-          
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto font-medium">
+            <p className="text-xl md:text-2xl text-muted-foreground mb-4 max-w-2xl mx-auto font-medium">
             🎉 Your premier destination for the hottest events in the city! 
             From concerts to galas, we've got your tickets covered.
           </p>
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
+            <p className="text-green-400 font-semibold mb-2">🚀 Platform Active</p>
+            <p className="text-sm text-muted-foreground">
+              Marketplace payments with instant seller payouts and professional event management are now live!
+            </p>
+          </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 dark-button-glow font-bold text-lg px-8 py-4">
               <Link href="/events">🎫 Browse Events</Link>
@@ -93,18 +100,17 @@ export default function Home() {
             </div>
           ) : events.length > 0 ? (
             <EventList events={events as any} />
-          ) : (
-            <Card className="max-w-2xl mx-auto text-center p-8 border-dashed border-2 border-primary/30">
+          ) : (            <Card className="max-w-2xl mx-auto text-center p-8 border-dashed border-2 border-primary/30">
               <CardHeader>
-                <div className="text-6xl mb-4">🎪</div>
-                <CardTitle className="brand-text-gradient text-2xl">Coming Soon!</CardTitle>
+                <div className="text-6xl mb-4">🚀</div>
+                <CardTitle className="brand-text-gradient text-2xl">Marketplace Ready!</CardTitle>
                 <CardDescription className="text-lg">
-                  Amazing events are being planned. Check back soon for exciting ticket opportunities!
+                  Professional event hosting with instant seller payouts is now live. Start selling your events today!
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button asChild className="brand-gradient text-white font-semibold">
-                  <Link href="/signup">Get Notified</Link>
+                  <Link href="/signup">Become a Seller</Link>
                 </Button>
               </CardContent>
             </Card>

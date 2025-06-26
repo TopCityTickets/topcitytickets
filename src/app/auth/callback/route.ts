@@ -28,8 +28,19 @@ export async function GET(request: NextRequest) {
       }
     );    const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Force a page refresh after successful auth to ensure navbar updates
-      const redirectUrl = new URL(`${origin}${next}`);
+      // Check if this is a new user by looking at user metadata or creation time
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // If user was created recently (within last 5 minutes), treat as new user
+      const isNewUser = user && new Date(user.created_at).getTime() > Date.now() - 5 * 60 * 1000;
+      
+      if (isNewUser) {
+        // Redirect new users to welcome page
+        return NextResponse.redirect(`${origin}/welcome?auth_success=true`);
+      }
+      
+      // Existing users go to dashboard or requested page
+      const redirectUrl = new URL(`${origin}${next === '/' ? '/dashboard' : next}`);
       redirectUrl.searchParams.set('auth_success', 'true');
       return NextResponse.redirect(redirectUrl);
     }

@@ -129,12 +129,12 @@ export default function LoginPage() {
               <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
                 <Mail className="w-4 h-4" />
                 Email address
-              </Label>
-              <Input
+              </Label>              <Input
                 id="email"
                 type="email"
                 placeholder="Enter your email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -146,17 +146,17 @@ export default function LoginPage() {
               <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
                 <Lock className="w-4 h-4" />
                 Password
-              </Label>
-              <Input
+              </Label>              <Input
                 id="password"
                 type="password"
                 placeholder="Enter your password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 className="ultra-dark-card border-primary/20 focus:border-primary/50"
-              />            </div>
+              /></div>
 
             <Button 
               type="submit" 

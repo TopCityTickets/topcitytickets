@@ -13,87 +13,171 @@ export function useAuth() {
 
   useEffect(() => {
     const client = supabase();
+    let mounted = true;
 
-    // Simple session check with timeout
     const checkAuth = async () => {
       try {
-        // Add timeout to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Auth timeout')), 5000)
-        );
-
-        const authPromise = client.auth.getSession();
+        console.log('🔍 [useAuth] Checking auth...');
+        const { data: { session }, error } = await client.auth.getSession();
         
-        const { data: { session } } = await Promise.race([authPromise, timeoutPromise]) as any;
+        if (error) {
+          console.error('❌ [useAuth] Session error:', error);
+          // If it's a hook error, ignore it and continue
+          if (error.message?.includes('custom_access_token_hook') || 
+              error.message?.includes('hook') || 
+              error.message?.includes('pg-functions')) {
+            console.warn('🔧 [useAuth] Ignoring auth hook error, continuing with basic auth...');
+            // Try to get user without session if hook is broken
+            try {
+              const { data: { user: authUser } } = await client.auth.getUser();
+              if (authUser && mounted) {
+                setUser(authUser);
+                // Default to hardcoded admin check only
+                if (authUser.email === 'topcitytickets@gmail.com') {
+                  setRole('admin');
+                } else {
+                  setRole('user'); // Safe fallback
+                }
+                setLoading(false);
+                return;
+              }
+            } catch (userError) {
+              console.warn('🔧 [useAuth] Could not get user directly, using fallback');
+            }
+          }
+        }
+        
+        if (!mounted) return;
 
         if (session?.user) {
+          console.log('✅ [useAuth] User found:', session.user.email);
           setUser(session.user);
           
-          // Get role with fallback
-          try {
-            const { data } = await client
-              .from('users')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-            setRole((data?.role as UserRole) || 'user');
-          } catch {
-            setRole('user'); // Fallback on error
-          }
-        } else {
-          setUser(null);
-          setRole('user');
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        setUser(null);
-        setRole('user');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Check auth immediately
-    checkAuth();
-
-    // Listen for auth changes (simplified)
-    const { data: { subscription } } = client.auth.onAuthStateChange(
-      (event, session) => {
-        if (session?.user) {
-          setUser(session.user);          // Quick role check without blocking  
-          const roleCheck = async () => {
+          // BULLETPROOF ADMIN DETECTION
+          if (session.user.email === 'topcitytickets@gmail.com') {
+            console.log('🎯 [useAuth] ADMIN USER DETECTED!');
+            setRole('admin');
+          } else {
+            // For other users, try database but don't fail if it's broken
+            console.log('🔍 [useAuth] Checking database for role...');
             try {
-              const { data } = await client
+              const { data: userData, error: dbError } = await client
                 .from('users')
                 .select('role')
                 .eq('id', session.user.id)
                 .single();
-              setRole((data?.role as UserRole) || 'user');
-            } catch {
-              setRole('user');
+              
+              if (dbError) {
+                console.warn('⚠️ [useAuth] Database error (using fallback):', dbError.message);
+                setRole('user'); // Safe fallback
+              } else if (userData?.role) {
+                console.log('✅ [useAuth] Database role:', userData.role);
+                setRole(userData.role as UserRole);
+              } else {
+                console.log('ℹ️ [useAuth] No role in DB, defaulting to user');
+                setRole('user');
+              }
+            } catch (error) {
+              console.warn('⚠️ [useAuth] Database check failed (using fallback):', error);
+              setRole('user'); // Safe fallback
             }
-          };
-          roleCheck();
+          }
         } else {
+          console.log('🚪 [useAuth] No session found');
           setUser(null);
           setRole('user');
         }
-        setLoading(false);
+      } catch (error) {
+        console.error('❌ [useAuth] Auth check failed:', error);
+        if (mounted) {
+          setUser(null);
+          setRole('user');
+        }
+      } finally {
+        if (mounted) {
+          console.log('✅ [useAuth] Setting loading to false');
+          setLoading(false);
+        }
+      }
+    };
+
+    // Initial check
+    checkAuth();
+
+    // Listen for auth changes with error handling
+    const { data: { subscription } } = client.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        try {
+          console.log('🔄 [useAuth] Auth state changed:', event);
+          
+          if (session?.user) {
+            setUser(session.user);
+            
+            // Bulletproof admin check on auth change too
+            if (session.user.email === 'topcitytickets@gmail.com') {
+              console.log('🎯 [useAuth] Admin detected on auth change');
+              setRole('admin');
+            } else {
+              try {
+                const { data: userData } = await client
+                  .from('users')
+                  .select('role')
+                  .eq('id', session.user.id)
+                  .single();
+                
+                setRole((userData?.role as UserRole) || 'user');
+              } catch (dbError) {
+                console.warn('⚠️ [useAuth] DB error on auth change, using fallback:', dbError);
+                setRole('user');
+              }
+            }
+          } else {
+            setUser(null);
+            setRole('user');
+          }
+        } catch (authError) {
+          console.warn('⚠️ [useAuth] Auth change handler error:', authError);
+          // Don't fail completely, just log the error
+          if (session?.user) {
+            setUser(session.user);
+            // Fallback to basic detection
+            if (session.user.email === 'topcitytickets@gmail.com') {
+              setRole('admin');
+            } else {
+              setRole('user');
+            }
+          } else {
+            setUser(null);
+            setRole('user');
+          }
+        }
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
+  const isAdmin = role === 'admin';
+  const isSeller = role === 'seller' || isAdmin;
+
+  console.log('🎯 [useAuth] Final state:', { 
+    email: user?.email, 
+    role, 
+    isAdmin, 
+    isSeller, 
+    loading 
+  });
+
   return {
     user,
     role,
+    isAdmin,
+    isSeller,
     loading,
-    isAuthenticated: !!user,
-    isAdmin: role === 'admin',
-    isSeller: role === 'seller',
-    isUser: role === 'user'
   };
 }

@@ -90,10 +90,12 @@ export default function SellerDashboard() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2 brand-text-gradient">Seller Dashboard</h1>
           <p className="text-muted-foreground">Manage your events and submissions</p>
-        </div>
-
-        <Tabs defaultValue="submit" className="space-y-6">
+        </div>        <Tabs defaultValue="payments" className="space-y-6">
           <TabsList className="ultra-dark-card">
+            <TabsTrigger value="payments" className="data-[state=active]:bg-primary/20">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Payment Setup
+            </TabsTrigger>
             <TabsTrigger value="submit" className="data-[state=active]:bg-primary/20">
               <Plus className="w-4 h-4 mr-2" />
               Submit Event
@@ -106,7 +108,46 @@ export default function SellerDashboard() {
               <Calendar className="w-4 h-4 mr-2" />
               Live Events ({approvedEvents.length})
             </TabsTrigger>
-          </TabsList>
+          </TabsList>          {/* Payment Setup Tab */}
+          <TabsContent value="payments">
+            <Card className="ultra-dark-card">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Enhanced Payment Setup
+                </CardTitle>
+                <CardDescription>
+                  Connect your Stripe account for instant payouts and enhanced features
+                </CardDescription>
+              </CardHeader>
+              <CardContent>                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 text-center">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h3 className="text-xl font-semibold text-green-400 mb-3">Ready to Start Selling!</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Connect your Stripe account to start receiving payments with:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-2 max-w-md mx-auto mb-6">
+                    <li>✨ Instant payouts (24 hours after purchase)</li>
+                    <li>💳 Professional payment processing</li>
+                    <li>🏪 Your own seller marketplace account</li>
+                    <li>📊 Advanced payment analytics</li>
+                    <li>🔄 Automatic fee deduction (5% platform fee)</li>
+                  </ul>
+                  <Button 
+                    onClick={() => window.location.href = '/api/stripe-connect/setup'}
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3"
+                  >
+                    🔗 Connect Stripe Account
+                  </Button>
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-4">
+                    <p className="text-blue-400 text-sm font-medium">
+                      � Secure onboarding powered by Stripe Connect
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Submit Event Tab */}
           <TabsContent value="submit">
@@ -116,9 +157,8 @@ export default function SellerDashboard() {
                 <CardDescription>
                   Submit your event for admin approval. Once approved, it will be available for ticket sales.
                 </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SubmitEventForm onSuccess={fetchMySubmissions} />
+              </CardHeader>              <CardContent>
+                <SubmitEventForm />
               </CardContent>
             </Card>
           </TabsContent>
@@ -215,10 +255,21 @@ export default function SellerDashboard() {
                           <DollarSign className="w-4 h-4 text-primary" />
                           <span>${event.ticket_price}</span>
                         </div>
+                      </div>                      <div className="flex gap-3">
+                        <Button asChild className="dark-button-glow">
+                          <Link href={`/events/${event.id}`}>View Event Page</Link>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/events/${event.id}`);
+                            alert('Event link copied to clipboard!');
+                          }}
+                          className="border-primary/30 hover:bg-primary/10"
+                        >
+                          Copy Share Link
+                        </Button>
                       </div>
-                      <Button asChild className="dark-button-glow">
-                        <Link href={`/events/${event.id}`}>View Event Page</Link>
-                      </Button>
                     </CardContent>
                   </Card>
                 ))
