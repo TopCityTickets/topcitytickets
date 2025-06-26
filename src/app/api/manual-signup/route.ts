@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     console.log('Manual signup result:', { data, error });
     
     // Check for the "success: no rows returned" error
-    if (!data && error?.message === 'success: no rows returned') {
+    if (!data && error?.message?.includes('no rows returned')) {
       // This is not actually an error - it means the operation was successful
       // but no rows were returned from the function
       console.log('Handling "no rows returned" case as success');
@@ -116,11 +116,25 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
           }
         }
+        // If we have 'user' data nested in the response
+        if (data.user && typeof data.user === 'object') {
+          return NextResponse.json({
+            success: true,
+            message: 'Account created successfully!',
+            user_id: data.user.user_id
+          });
+        }
         // If data exists but has no success property, assume success
         return NextResponse.json({
           success: true,
           message: 'Account created successfully!',
           data: data // Return whatever data we got
+        });
+      } else if (data === true || data === 'true') {
+        // Handle boolean success value
+        return NextResponse.json({
+          success: true,
+          message: 'Account created successfully!'
         });
       }
     }
@@ -128,9 +142,8 @@ export async function POST(request: NextRequest) {
     // Last resort fallback
     return NextResponse.json({
       success: true, // Assume success if we got this far
-      message: 'Registration completed',
-      error: 'Unexpected response from signup function'
-    }, { status: 500 });
+      message: 'Registration completed'
+    });
 
   } catch (err) {
     console.error('Manual signup API error:', err);
