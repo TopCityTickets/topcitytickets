@@ -42,28 +42,39 @@ export default function SignUp() {
     }
 
     try {
-      const { data, error } = await supabase().auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { role: 'user' }
-        }
+      console.log('Attempting manual signup for:', email);
+      
+      // Use our custom manual signup API instead of Supabase auth.signUp
+      const response = await fetch('/api/manual-signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) throw error;
+      const result = await response.json();
+      console.log('Manual signup response:', result);
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Signup failed');
+      }
       
-      if (data.user) {
-        setSuccess('Account created! Please check your email to confirm your account.');
+      if (result.success) {
+        console.log('User created successfully:', result);
+        
+        setSuccess('Account created successfully! You can now sign in with your credentials.');
+        // Clear form
         setEmail('');
         setPassword('');
         setConfirmPassword('');
+        // Redirect to login after a delay
         setTimeout(() => {
-          router.push('/login?message=Check your email to confirm your account and complete registration');
+          router.push('/login?message=Account created successfully! Please sign in with your credentials.');
         }, 2000);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Signup error details:', err);
       setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
     } finally {
       setLoading(false);

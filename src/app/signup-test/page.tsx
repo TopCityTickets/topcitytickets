@@ -17,39 +17,42 @@ export default function SimpleSignupTest() {
     setResult(null);
 
     try {
-      console.log('Testing signup with:', { email, password });
+      console.log('Testing manual signup with:', { email, password });
       
-      const { data, error } = await supabase().auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        }
+      // Use our custom manual signup API instead of Supabase auth.signUp
+      const response = await fetch('/api/manual-signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      console.log('Signup result:', { data, error });
+      const data = await response.json();
+      console.log('Manual signup result:', data);
       
       setResult({
-        success: !error,
-        error: error?.message,
-        user: data.user,
-        session: data.session,
-        needsConfirmation: !data.session && data.user && !data.user.email_confirmed_at
+        success: response.ok && data.success,
+        error: data.error,
+        user: data.user_id ? { id: data.user_id } : null,
+        session: null, // Manual signup doesn't create session immediately
+        needsConfirmation: false, // Our manual signup auto-confirms
+        apiResponse: data
       });
 
       // If user was created, test if we can fetch from database
-      if (data.user && !error) {
+      if (data.success && data.user_id) {
         console.log('User created, testing database fetch...');
         
         const { data: userData, error: userError } = await supabase()
           .from('users')
           .select('*')
-          .eq('id', data.user.id)
+          .eq('id', data.user_id)
           .single();
         
         console.log('Database fetch result:', { userData, userError });
         
-        setResult(prev => ({
+        setResult((prev: any) => ({
           ...prev,
           databaseUser: userData,
           databaseError: userError?.message

@@ -46,21 +46,27 @@ export async function signIn(prevState: any, formData: FormData) {
 }
 
 export async function signUp(prevState: any, formData: FormData) {
-  const supabase = createClient();
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-    },
-  });
+  try {
+    // Use our custom manual signup API instead of broken Supabase auth.signUp
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/manual-signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-  if (error) {
-    return { message: error.message, error: true };
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      return { message: result.error || 'Signup failed', error: true };
+    }
+
+    return { message: 'Account created successfully! You can now sign in with your credentials.', error: false };
+  } catch (error) {
+    return { message: 'Signup failed. Please try again.', error: true };
   }
-
-  return { message: 'Check your email for the confirmation link!', error: false };
 }

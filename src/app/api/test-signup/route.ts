@@ -7,32 +7,32 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    console.log('Testing signup for:', email);
+    console.log('Testing manual signup for:', email);
 
-    const { data, error } = await supabase().auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${new URL(request.url).origin}/auth/callback`,
-        data: { role: 'user' }
-      }
+    // Use our custom manual signup API instead of Supabase auth.signUp
+    const response = await fetch(`${new URL(request.url).origin}/api/manual-signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
     });
 
-    console.log('Signup result:', { data, error });
+    const result = await response.json();
+    console.log('Manual signup result:', result);
 
-    if (error) {
+    if (!response.ok || !result.success) {
       return NextResponse.json({ 
         success: false, 
-        error: error.message,
-        code: error.status
-      }, { status: 400 });
+        error: result.error || 'Signup failed'
+      }, { status: response.status });
     }
 
     return NextResponse.json({ 
       success: true, 
-      user: data.user,
-      session: data.session,
-      needsConfirmation: !data.session && data.user && !data.user.email_confirmed_at
+      user_id: result.user_id,
+      message: result.message,
+      needsConfirmation: false // Manual signup auto-confirms
     });
 
   } catch (err) {
