@@ -15,6 +15,8 @@ import Image from "next/image";
 import { UserPlus, Mail, Lock, AlertCircle, Sparkles } from "lucide-react";
 
 export default function SignUp() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,6 +31,19 @@ export default function SignUp() {
     setError(null);
     setSuccess(null);
 
+    // Validation
+    if (!firstName.trim()) {
+      setError("First name is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!lastName.trim()) {
+      setError("Last name is required");
+      setLoading(false);
+      return;
+    }
+    
     if (password !== confirmPassword) {
       setError("Passwords don't match");
       setLoading(false);
@@ -53,8 +68,8 @@ export default function SignUp() {
         body: JSON.stringify({ 
           email, 
           password,
-          firstName: 'New',
-          lastName: 'User'
+          firstName: firstName.trim(),
+          lastName: lastName.trim()
         }),
       });
 
@@ -70,6 +85,8 @@ export default function SignUp() {
         
         setSuccess('Account created successfully! You can now sign in with your credentials.');
         // Clear form
+        setFirstName('');
+        setLastName('');
         setEmail('');
         setPassword('');
         setConfirmPassword('');
@@ -127,6 +144,42 @@ export default function SignUp() {
           )}
 
           <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="text-sm font-medium">
+                  First Name
+                </Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="Enter your first name"
+                  required
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={loading}
+                  className="ultra-dark-card border-primary/20 focus:border-primary/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="text-sm font-medium">
+                  Last Name
+                </Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Enter your last name"
+                  required
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={loading}
+                  className="ultra-dark-card border-primary/20 focus:border-primary/50"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
                 <Mail className="w-4 h-4" />
