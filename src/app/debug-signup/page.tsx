@@ -23,9 +23,10 @@ export default function SignupDebugger() {
 
   const testDirectSignup = async () => {
     setLoading(true);
-    addResult('Starting Direct Supabase Signup', { email });
+    addResult('Starting Direct Supabase Signup (BROKEN - for testing)', { email });
 
     try {
+      // Test the broken direct signup for comparison
       const { data, error } = await supabase().auth.signUp({
         email,
         password,
@@ -35,7 +36,7 @@ export default function SignupDebugger() {
         }
       });
 
-      addResult('Direct Signup Response', { data, error });
+      addResult('Direct Signup Response (BROKEN)', { data, error });
 
       if (data.user && !error) {
         // Test if we can immediately query the user from the database
@@ -46,22 +47,39 @@ export default function SignupDebugger() {
             .eq('id', data.user.id)
             .single();
           
-          addResult('Database Query After Signup', { userData, userError });
+          addResult('Database Query After Signup (BROKEN)', { userData, userError });
         } catch (dbErr) {
-          addResult('Database Query Error', { error: dbErr });
+          addResult('Database Query Error (BROKEN)', { error: dbErr });
         }
 
         // Test auth.getUser()
         try {
           const { data: authUser, error: authError } = await supabase().auth.getUser();
-          addResult('Auth GetUser', { authUser, authError });
+          addResult('Auth GetUser (BROKEN)', { authUser, authError });
         } catch (authErr) {
-          addResult('Auth GetUser Error', { error: authErr });
+          addResult('Auth GetUser Error (BROKEN)', { error: authErr });
         }
       }
 
     } catch (err) {
-      addResult('Direct Signup Error', { error: err });
+      addResult('Direct Signup Error (BROKEN)', { error: err });
+    }
+    
+    // Now test the working manual signup API
+    try {
+      addResult('Testing Working Manual Signup API', { email });
+      
+      const response = await fetch('/api/manual-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email + '_manual', password })
+      });
+
+      const result = await response.json();
+      addResult('Manual Signup API Response (WORKING)', { status: response.status, result });
+
+    } catch (err) {
+      addResult('Manual Signup API Error', { error: err });
     } finally {
       setLoading(false);
     }
