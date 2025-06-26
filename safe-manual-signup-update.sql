@@ -1,23 +1,20 @@
--- UPDATE MANUAL SIGNUP FUNCTION TO INCLUDE NAME FIELDS
--- This updates the function to work with the current schema
+-- SAFE UPDATE FOR MANUAL SIGNUP FUNCTION
+-- This version works regardless of enum types
 -- Run this in Supabase SQL Editor
 
--- First, let's check what the actual role column type is
-DO $$
-BEGIN
-    -- Check if role is text or enum
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'users' 
-        AND column_name = 'role' 
-        AND data_type = 'text'
-    ) THEN
-        RAISE NOTICE 'Role column is TEXT type';
-    ELSE
-        RAISE NOTICE 'Role column is ENUM type or other';
-    END IF;
-END $$;
+-- First check the actual structure of your users table
+SELECT 
+    column_name, 
+    data_type, 
+    udt_name,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_schema = 'public' 
+AND table_name = 'users'
+ORDER BY ordinal_position;
 
+-- Now create the function - this should work with any role type
 CREATE OR REPLACE FUNCTION public.manual_signup(
     user_email TEXT,
     user_password TEXT,
@@ -64,16 +61,15 @@ BEGIN
         'authenticated',
         'authenticated',
         crypt(user_password, gen_salt('bf')),
-        NOW(), -- Auto-confirm email
         NOW(),
         NOW(),
-        '' -- No confirmation needed
+        NOW(),
+        ''
     );
     
-    -- Create user in public.users with name fields
-    -- Use text 'user' for role (should work with both text and enum)
-    INSERT INTO public.users (id, email, role, first_name, last_name, created_at, updated_at)
-    VALUES (new_user_id, user_email, 'user', user_first_name, user_last_name, NOW(), NOW());
+    -- Create user in public.users - let role use its default value
+    INSERT INTO public.users (id, email, first_name, last_name, created_at, updated_at)
+    VALUES (new_user_id, user_email, user_first_name, user_last_name, NOW(), NOW());
     
     -- Return success
     result := json_build_object(
@@ -90,10 +86,9 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
     RETURN json_build_object(
         'success', false,
-        'error', SQLERRM
+        'error', SQLERRM,
+        'detail', SQLSTATE
     );
 END $$;
 
--- Test the function
-SELECT 'Updated manual_signup function to include name fields' as message;
-SELECT 'You can now test signup with first_name and last_name' as instruction;
+SELECT 'Function updated - role will use default value from table definition' as message;

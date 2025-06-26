@@ -50,7 +50,12 @@ export default function SignUp() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          password,
+          firstName: 'New',
+          lastName: 'User'
+        }),
       });
 
       const result = await response.json();

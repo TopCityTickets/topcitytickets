@@ -19,13 +19,18 @@ export default function SimpleSignupTest() {
     try {
       console.log('Testing manual signup with:', { email, password });
       
-      // Use our custom manual signup API instead of Supabase auth.signUp
+      // Use our custom manual signup API with default names for testing
       const response = await fetch('/api/manual-signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          password,
+          firstName: 'Test',
+          lastName: 'User'
+        }),
       });
 
       const data = await response.json();

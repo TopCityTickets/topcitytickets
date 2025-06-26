@@ -72,7 +72,12 @@ export default function SignupDebugger() {
       const response = await fetch('/api/manual-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email + '_manual', password })
+        body: JSON.stringify({ 
+          email: email + '_manual', 
+          password,
+          firstName: 'Debug',
+          lastName: 'User'
+        })
       });
 
       const result = await response.json();

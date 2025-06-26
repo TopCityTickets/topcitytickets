@@ -23,7 +23,9 @@ export default function TestSignupAPIs() {
         },
         body: JSON.stringify({ 
           email: 'test-manual@example.com', 
-          password: 'test123456' 
+          password: 'test123456',
+          firstName: 'Test',
+          lastName: 'Manual'
         }),
       });
 

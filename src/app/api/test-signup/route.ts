@@ -9,13 +9,18 @@ export async function POST(request: NextRequest) {
 
     console.log('Testing manual signup for:', email);
 
-    // Use our custom manual signup API instead of Supabase auth.signUp
+    // Use our custom manual signup API with default names for testing
     const response = await fetch(`${new URL(request.url).origin}/api/manual-signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        firstName: 'Test',
+        lastName: 'User'
+      }),
     });
 
     const result = await response.json();
