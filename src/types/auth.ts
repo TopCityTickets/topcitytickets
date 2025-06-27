@@ -4,6 +4,8 @@ export type UserRole = 'user' | 'seller' | 'admin';
 
 export interface AuthUser extends User {
   role?: UserRole;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface AuthState {

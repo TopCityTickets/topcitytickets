@@ -43,10 +43,18 @@ export default function AuthForm({ mode = 'signin' }: { mode?: 'signin' | 'signu
         <form action={formAction}>
           <div className="space-y-4">
             {mode === 'signup' && (
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" name="name" type="text" required />
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input id="firstName" name="firstName" type="text" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" name="lastName" type="text" required />
+                  </div>
+                </div>
+              </>
             )}
             <div>
               <Label htmlFor="email">Email</Label>

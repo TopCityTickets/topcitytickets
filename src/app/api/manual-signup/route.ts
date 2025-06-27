@@ -50,42 +50,15 @@ export async function POST(request: NextRequest) {
 
     console.log('User check result:', checkData);
 
-    // If duplicates exist, clean them first
-    if (checkData?.has_duplicates) {
-      console.log('Found duplicate records for user, cleaning up first...');
-      const { data: cleanData } = await supabase.rpc('clean_duplicate_user', {
-        user_email: email
-      });
-      console.log('Cleanup result:', cleanData);
-      
-      // Re-check after cleaning
-      const { data: recheckData } = await supabase.rpc('check_user_exists', {
-        email_to_check: email
-      });
-      console.log('After cleanup check:', recheckData);
-      
-      // Update our checkData
-      if (recheckData) {
-        checkData = recheckData;
-      }
-    }
-
-    // Now handle the clean user data
+    // If user already exists, return error with login link
     if (checkData?.exists) {
       console.log('User exists:', checkData);
       
-      // If user exists in auth but not in public, we can try to repair in the signup function
-      if (checkData?.exists_in_auth && !checkData?.exists_in_public) {
-        console.log('User exists in auth but not in public - will attempt repair');
-        // Continue to manual_signup which will handle this case
-      } else if (checkData?.exists_in_auth && checkData?.exists_in_public) {
-        console.log('User already exists in both auth and public tables');
-        return NextResponse.json({ 
-          success: false, 
-          error: 'An account with this email already exists. Please log in instead.',
-          login_url: '/login?email=' + encodeURIComponent(email)
-        }, { status: 400 });
-      }
+      return NextResponse.json({ 
+        success: false, 
+        error: 'An account with this email already exists. Please log in instead.',
+        login_url: '/login?email=' + encodeURIComponent(email)
+      }, { status: 400 });
     }
 
     // Call our manual signup function

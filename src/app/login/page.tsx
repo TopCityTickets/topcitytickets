@@ -49,12 +49,18 @@ export default function LoginPage() {
 
           if (userError && userError.code === 'PGRST116') {
             // User doesn't exist in public.users, create them
+            // Get user metadata from auth.users
+            const { data: userData } = await client.auth.getUser();
+            const meta = userData?.user?.user_metadata || {};
+            
             await client
               .from('users')
               .insert({
                 id: data.user.id,
                 email: data.user.email!,
                 role: 'user',
+                first_name: meta.first_name || '',
+                last_name: meta.last_name || '',
                 created_at: data.user.created_at
               });
             

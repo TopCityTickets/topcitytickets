@@ -105,19 +105,28 @@ export type Database = {
           id: string
           email: string
           role: 'user' | 'seller' | 'admin'
+          first_name: string
+          last_name: string
           created_at: string
+          updated_at?: string
         }
         Insert: {
           id: string
           email: string
           role?: 'user' | 'seller' | 'admin'
+          first_name: string
+          last_name: string
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           email?: string
           role?: 'user' | 'seller' | 'admin'
+          first_name?: string
+          last_name?: string
           created_at?: string
+          updated_at?: string
         }
       }
     }
