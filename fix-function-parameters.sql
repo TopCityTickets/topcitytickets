@@ -1,106 +1,14 @@
--- Migration: Update User Schema
--- This migration adds first_name and last_name to users table and ensures proper constraints
+-- Quick fix for function parameter error
+-- Run this to fix the "cannot remove parameter defaults" error
 
--- Make sure both auth and public schemas are accessible
 BEGIN;
 
--- First, drop any existing functions that might conflict
+-- Drop existing functions that might have parameter conflicts
 DROP FUNCTION IF EXISTS public.manual_signup(text, text, text, text);
 DROP FUNCTION IF EXISTS public.check_user_exists(text);
 DROP FUNCTION IF EXISTS public.clean_duplicate_user(text);
 
--- 1. Update public.users table to ensure it has first_name and last_name columns
-DO $$ 
-BEGIN
-    -- Add first_name if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'users' 
-        AND column_name = 'first_name'
-    ) THEN
-        ALTER TABLE public.users ADD COLUMN first_name TEXT;
-    END IF;
-
-    -- Add last_name if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'users' 
-        AND column_name = 'last_name'
-    ) THEN
-        ALTER TABLE public.users ADD COLUMN last_name TEXT;
-    END IF;
-    
-    -- Add updated_at if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'users' 
-        AND column_name = 'updated_at'
-    ) THEN
-        ALTER TABLE public.users ADD COLUMN updated_at TIMESTAMPTZ DEFAULT now();
-    END IF;
-END $$;
-
--- 2. Ensure public.users has the correct structure and constraints
-ALTER TABLE public.users ALTER COLUMN id SET NOT NULL;
-ALTER TABLE public.users ALTER COLUMN email SET NOT NULL;
-ALTER TABLE public.users ALTER COLUMN role SET NOT NULL;
-ALTER TABLE public.users ALTER COLUMN created_at SET DEFAULT now();
-
--- 3. Make sure foreign key to auth.users exists
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_name = 'users_id_fkey' 
-        AND table_schema = 'public' 
-        AND table_name = 'users'
-    ) THEN
-        -- Add foreign key if it doesn't exist
-        ALTER TABLE public.users
-        ADD CONSTRAINT users_id_fkey
-        FOREIGN KEY (id)
-        REFERENCES auth.users(id)
-        ON DELETE CASCADE;
-    END IF;
-END $$;
-
--- 4. Create or update trigger to auto-create public.users entry when auth.users is created
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO public.users (id, email, role, first_name, last_name, created_at)
-    VALUES (
-        NEW.id,
-        NEW.email,
-        'user',
-        COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-        COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-        NEW.created_at
-    )
-    ON CONFLICT (id) DO UPDATE SET
-        email = EXCLUDED.email,
-        first_name = COALESCE(EXCLUDED.first_name, public.users.first_name),
-        last_name = COALESCE(EXCLUDED.last_name, public.users.last_name),
-        updated_at = now();
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Drop the trigger if it exists
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-
--- Create the trigger
-CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- 5. Drop and recreate the manual signup function to match our schema
-DROP FUNCTION IF EXISTS public.manual_signup(text, text, text, text);
-
+-- Recreate manual_signup function with proper signature
 CREATE FUNCTION public.manual_signup(
     user_email TEXT,
     user_password TEXT,
@@ -166,29 +74,30 @@ BEGIN
         now(),
         now(),
         now() -- Auto-confirm email
-    )
-    RETURNING * INTO result;
+    );
     
-    -- The trigger will automatically create the public.users entry
-    -- But to be safe, let's check and create it if needed
-    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = user_id) THEN
-        INSERT INTO public.users (
-            id,
-            email,
-            role,
-            first_name,
-            last_name,
-            created_at
-        )
-        VALUES (
-            user_id,
-            user_email,
-            'user',
-            user_first_name,
-            user_last_name,
-            now()
-        );
-    END IF;
+    -- Create corresponding public.users entry
+    INSERT INTO public.users (
+        id,
+        email,
+        role,
+        first_name,
+        last_name,
+        created_at
+    )
+    VALUES (
+        user_id,
+        user_email,
+        'user',
+        user_first_name,
+        user_last_name,
+        now()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        updated_at = now();
     
     -- Return success with user info
     RETURN json_build_object(
@@ -211,9 +120,7 @@ EXCEPTION WHEN others THEN
 END;
 $$;
 
--- 6. Drop and recreate check_user_exists function
-DROP FUNCTION IF EXISTS public.check_user_exists(text);
-
+-- Recreate check_user_exists function
 CREATE FUNCTION public.check_user_exists(email_to_check TEXT)
 RETURNS JSON
 LANGUAGE plpgsql
