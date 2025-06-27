@@ -50,12 +50,20 @@ export async function POST(request: NextRequest) {
 
     console.log('User check result:', checkData);
 
-    if (checkData?.exists_in_auth && checkData?.exists_in_public) {
-      console.log('User already exists in both auth and public tables');
-      return NextResponse.json({ 
-        success: false, 
-        error: 'An account with this email already exists. Please log in instead.' 
-      }, { status: 400 });
+    if (checkData?.exists) {
+      console.log('User already exists:', checkData);
+      
+      // If user exists in auth but not in public, we can try to repair in the signup function
+      if (checkData?.exists_in_auth && !checkData?.exists_in_public) {
+        console.log('User exists in auth but not in public - will attempt repair');
+        // Continue to manual_signup which will handle this case
+      } else if (checkData?.exists_in_auth && checkData?.exists_in_public) {
+        console.log('User already exists in both auth and public tables');
+        return NextResponse.json({ 
+          success: false, 
+          error: 'An account with this email already exists. Please log in instead.' 
+        }, { status: 400 });
+      }
     }
 
     // Call our manual signup function
@@ -84,10 +92,23 @@ export async function POST(request: NextRequest) {
       console.error('Manual signup error:', error);
       
       // Handle common error messages more user-friendly
-      if (error.message.includes('violates unique constraint')) {
+      if (error.message.includes('violates unique constraint') || 
+          error.message.includes('already exists') ||
+          error.message.includes('duplicate key value')) {
+        
+        // Try to extract actual error from the error message if possible
+        let actualError = 'An account with this email already exists. Please log in instead.';
+        
+        // Check if we have a more specific error embedded in the error message (from our function)
+        const dataMatch = error.message.match(/{"success":false.*?"error":"([^"]+)"/);
+        if (dataMatch && dataMatch[1]) {
+          actualError = dataMatch[1];
+        }
+        
         return NextResponse.json({ 
           success: false, 
-          error: 'An account with this email already exists. Please log in instead.' 
+          error: actualError,
+          login_url: '/login?email=' + encodeURIComponent(email)
         }, { status: 400 });
       }
       
