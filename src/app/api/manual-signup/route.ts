@@ -44,14 +44,35 @@ export async function POST(request: NextRequest) {
     );
 
     // First check if the user already exists
-    const { data: checkData, error: checkError } = await supabase.rpc('check_user_exists', {
+    let { data: checkData, error: checkError } = await supabase.rpc('check_user_exists', {
       email_to_check: email
     });
 
     console.log('User check result:', checkData);
 
+    // If duplicates exist, clean them first
+    if (checkData?.has_duplicates) {
+      console.log('Found duplicate records for user, cleaning up first...');
+      const { data: cleanData } = await supabase.rpc('clean_duplicate_user', {
+        user_email: email
+      });
+      console.log('Cleanup result:', cleanData);
+      
+      // Re-check after cleaning
+      const { data: recheckData } = await supabase.rpc('check_user_exists', {
+        email_to_check: email
+      });
+      console.log('After cleanup check:', recheckData);
+      
+      // Update our checkData
+      if (recheckData) {
+        checkData = recheckData;
+      }
+    }
+
+    // Now handle the clean user data
     if (checkData?.exists) {
-      console.log('User already exists:', checkData);
+      console.log('User exists:', checkData);
       
       // If user exists in auth but not in public, we can try to repair in the signup function
       if (checkData?.exists_in_auth && !checkData?.exists_in_public) {
@@ -61,7 +82,8 @@ export async function POST(request: NextRequest) {
         console.log('User already exists in both auth and public tables');
         return NextResponse.json({ 
           success: false, 
-          error: 'An account with this email already exists. Please log in instead.' 
+          error: 'An account with this email already exists. Please log in instead.',
+          login_url: '/login?email=' + encodeURIComponent(email)
         }, { status: 400 });
       }
     }
@@ -91,30 +113,50 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Manual signup error:', error);
       
-      // Handle common error messages more user-friendly
-      if (error.message.includes('violates unique constraint') || 
-          error.message.includes('already exists') ||
-          error.message.includes('duplicate key value')) {
+      // Try to handle common error types with better information
+      const errorMsg = error.message || 'Unknown error';
+      
+      // Handle various duplicate/constraint errors
+      if (errorMsg.includes('violates unique constraint') || 
+          errorMsg.includes('already exists') ||
+          errorMsg.includes('duplicate key value')) {
         
-        // Try to extract actual error from the error message if possible
-        let actualError = 'An account with this email already exists. Please log in instead.';
+        console.log('Handling duplicate key error - attempting recovery...');
         
-        // Check if we have a more specific error embedded in the error message (from our function)
-        const dataMatch = error.message.match(/{"success":false.*?"error":"([^"]+)"/);
-        if (dataMatch && dataMatch[1]) {
-          actualError = dataMatch[1];
+        try {
+          // Attempt to clean duplicates for this user
+          const { data: cleanData } = await supabase.rpc('clean_duplicate_user', {
+            user_email: email
+          });
+          
+          console.log('Auto-recovery attempt result:', cleanData);
+          
+          // Try to extract more specific error from the error message
+          let actualError = 'An account with this email already exists. Please log in instead.';
+          
+          // Check for embedded JSON error
+          const dataMatch = errorMsg.match(/{"success":false.*?"error":"([^"]+)"/);
+          if (dataMatch && dataMatch[1]) {
+            actualError = dataMatch[1];
+          }
+          
+          // Return user-friendly error with login link
+          return NextResponse.json({ 
+            success: false, 
+            error: actualError,
+            login_url: '/login?email=' + encodeURIComponent(email),
+            recovery_attempted: true
+          }, { status: 400 });
+          
+        } catch (recoveryError) {
+          console.error('Recovery attempt failed:', recoveryError);
         }
-        
-        return NextResponse.json({ 
-          success: false, 
-          error: actualError,
-          login_url: '/login?email=' + encodeURIComponent(email)
-        }, { status: 400 });
       }
       
+      // Default error handling
       return NextResponse.json({ 
         success: false, 
-        error: error.message 
+        error: errorMsg
       }, { status: 500 });
     }
 
