@@ -52,12 +52,21 @@ BEGIN
     END IF;
 END $$;
 
--- Event submissions indexes - only if table exists
+-- Event submissions indexes - only if table and columns exist
 DO $$
 BEGIN
     IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'event_submissions') THEN
-        CREATE INDEX IF NOT EXISTS idx_event_submissions_seller_id ON public.event_submissions(seller_id);
-        CREATE INDEX IF NOT EXISTS idx_event_submissions_status ON public.event_submissions(status);
+        
+        -- Check for seller_id column
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'event_submissions' AND column_name = 'seller_id') THEN
+            CREATE INDEX IF NOT EXISTS idx_event_submissions_seller_id ON public.event_submissions(seller_id);
+        END IF;
+        
+        -- Check for status column
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'event_submissions' AND column_name = 'status') THEN
+            CREATE INDEX IF NOT EXISTS idx_event_submissions_status ON public.event_submissions(status);
+        END IF;
+        
     END IF;
 END $$;
 
@@ -190,11 +199,14 @@ BEGIN
         EXECUTE 'CREATE POLICY "Service role access only" ON public.anonymous_purchases FOR ALL USING (auth.role() = ''service_role'')';
     END IF;
     
-    -- Event submissions policies
+    -- Event submissions policies (check column existence)
     IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'event_submissions') THEN
-        EXECUTE 'CREATE POLICY "Sellers can view own submissions" ON public.event_submissions FOR SELECT USING (seller_id = auth.uid() OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = ''admin''))';
-        EXECUTE 'CREATE POLICY "Sellers can create submissions" ON public.event_submissions FOR INSERT WITH CHECK (seller_id = auth.uid())';
-        EXECUTE 'CREATE POLICY "Sellers can update own submissions" ON public.event_submissions FOR UPDATE USING (seller_id = auth.uid())';
+        -- Only create policies if seller_id column exists
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'event_submissions' AND column_name = 'seller_id') THEN
+            EXECUTE 'CREATE POLICY "Sellers can view own submissions" ON public.event_submissions FOR SELECT USING (seller_id = auth.uid() OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = ''admin''))';
+            EXECUTE 'CREATE POLICY "Sellers can create submissions" ON public.event_submissions FOR INSERT WITH CHECK (seller_id = auth.uid())';
+            EXECUTE 'CREATE POLICY "Sellers can update own submissions" ON public.event_submissions FOR UPDATE USING (seller_id = auth.uid())';
+        END IF;
     END IF;
     
     -- Events policies (check if seller_id column exists)
