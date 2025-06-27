@@ -29,6 +29,7 @@ The error occurred because the migration was trying to reference columns that di
 - Creates performance indexes
 - Sets up Row Level Security policies
 - Finalizes the migration
+- **Enhanced:** Contains robust existence checks to prevent "column does not exist" errors
 
 ## 🔧 How to Run the Migration
 
