@@ -26,25 +26,68 @@ DROP FUNCTION IF EXISTS public.clean_duplicate_user(text);
 -- 2. CORE USER SYSTEM
 -- ============================================================================
 
--- Users table - handles both registered and anonymous users
-CREATE TABLE IF NOT EXISTS public.users (
-    id UUID PRIMARY KEY,
-    email TEXT UNIQUE,
-    role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'seller', 'admin')),
-    first_name TEXT,
-    last_name TEXT,
-    is_anonymous BOOLEAN DEFAULT FALSE,
-    seller_status TEXT DEFAULT NULL CHECK (seller_status IN (NULL, 'pending', 'approved', 'denied')),
-    seller_applied_at TIMESTAMPTZ,
-    seller_approved_at TIMESTAMPTZ,
-    seller_denied_at TIMESTAMPTZ,
-    can_reapply_at TIMESTAMPTZ, -- For denied sellers (1 week wait)
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    
-    -- Foreign key to auth.users (NULL for anonymous users)
-    CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
-);
+-- Update existing users table or create if not exists
+DO $$ 
+BEGIN
+    -- First ensure the table exists with basic structure
+    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users') THEN
+        CREATE TABLE public.users (
+            id UUID PRIMARY KEY,
+            email TEXT UNIQUE,
+            role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'seller', 'admin')),
+            created_at TIMESTAMPTZ DEFAULT now()
+        );
+    END IF;
+
+    -- Add missing columns one by one
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'first_name') THEN
+        ALTER TABLE public.users ADD COLUMN first_name TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'last_name') THEN
+        ALTER TABLE public.users ADD COLUMN last_name TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'is_anonymous') THEN
+        ALTER TABLE public.users ADD COLUMN is_anonymous BOOLEAN DEFAULT FALSE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'seller_status') THEN
+        ALTER TABLE public.users ADD COLUMN seller_status TEXT DEFAULT NULL CHECK (seller_status IN (NULL, 'pending', 'approved', 'denied'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'seller_applied_at') THEN
+        ALTER TABLE public.users ADD COLUMN seller_applied_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'seller_approved_at') THEN
+        ALTER TABLE public.users ADD COLUMN seller_approved_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'seller_denied_at') THEN
+        ALTER TABLE public.users ADD COLUMN seller_denied_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'can_reapply_at') THEN
+        ALTER TABLE public.users ADD COLUMN can_reapply_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'updated_at') THEN
+        ALTER TABLE public.users ADD COLUMN updated_at TIMESTAMPTZ DEFAULT now();
+    END IF;
+
+    -- Ensure foreign key exists
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'users_id_fkey' 
+        AND table_schema = 'public' 
+        AND table_name = 'users'
+    ) THEN
+        ALTER TABLE public.users
+        ADD CONSTRAINT users_id_fkey
+        FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Anonymous user purchases (for users who don't want to sign up)
 CREATE TABLE IF NOT EXISTS public.anonymous_purchases (

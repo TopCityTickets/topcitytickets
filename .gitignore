@@ -40,3 +40,6 @@ next-env.d.ts
 .genkit/*
 .env*
 .env*.local
+
+# SQL files should not be in root directory
+/*.sql

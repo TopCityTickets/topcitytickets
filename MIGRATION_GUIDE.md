@@ -7,25 +7,25 @@ The error occurred because the migration was trying to reference columns that di
 ## 📋 Migration Steps (Run in Order)
 
 ### Step 1: Add Missing Columns to Users Table
-**File:** `step1-add-user-columns.sql`
+**File:** `migrations/step1-add-user-columns.sql`
 - Safely adds all missing columns to the existing users table
 - Handles existing constraints properly
 - Adds updated_at trigger
 
 ### Step 2: Create New Tables
-**File:** `step2-create-new-tables.sql`
+**File:** `migrations/step2-create-new-tables.sql`
 - Creates all new tables for the redesigned system
 - Handles existing tables gracefully (adds missing columns)
 - Sets up proper relationships
 
 ### Step 3: Create Functions and Triggers
-**File:** `step3-create-functions.sql`
+**File:** `migrations/step3-create-functions.sql`
 - Drops conflicting functions first
 - Creates all business logic functions
 - Sets up automated triggers for escrow system
 
 ### Step 4: Add Indexes and Security
-**File:** `step4-indexes-security.sql`
+**File:** `migrations/step4-indexes-security.sql`
 - Creates performance indexes
 - Sets up Row Level Security policies
 - Finalizes the migration
@@ -35,10 +35,10 @@ The error occurred because the migration was trying to reference columns that di
 
 ### In Supabase SQL Editor:
 
-1. **Step 1:** Copy and paste `step1-add-user-columns.sql` → Execute
-2. **Step 2:** Copy and paste `step2-create-new-tables.sql` → Execute  
-3. **Step 3:** Copy and paste `step3-create-functions.sql` → Execute
-4. **Step 4:** Copy and paste `step4-indexes-security.sql` → Execute
+1. **Step 1:** Copy and paste `migrations/step1-add-user-columns.sql` → Execute
+2. **Step 2:** Copy and paste `migrations/step2-create-new-tables.sql` → Execute  
+3. **Step 3:** Copy and paste `migrations/step3-create-functions.sql` → Execute
+4. **Step 4:** Copy and paste `migrations/step4-indexes-security.sql` → Execute
 
 ### Verify Each Step:
 After each step, check that it completed without errors before proceeding to the next.
