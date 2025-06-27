@@ -142,32 +142,32 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    current_user RECORD;
+    user_record RECORD;
 BEGIN
     -- Get current user info
-    SELECT * INTO current_user FROM public.users WHERE id = user_id;
+    SELECT * INTO user_record FROM public.users WHERE id = user_id;
     
     IF NOT FOUND THEN
         RETURN json_build_object('success', false, 'error', 'User not found');
     END IF;
     
     -- Check if user is already a seller
-    IF current_user.role = 'seller' THEN
+    IF user_record.role = 'seller' THEN
         RETURN json_build_object('success', false, 'error', 'User is already a seller');
     END IF;
     
     -- Check if user has pending application
-    IF current_user.seller_status = 'pending' THEN
+    IF user_record.seller_status = 'pending' THEN
         RETURN json_build_object('success', false, 'error', 'Seller application is already pending');
     END IF;
     
     -- Check if user was recently denied and can't reapply yet
-    IF current_user.seller_status = 'denied' AND 
-       current_user.can_reapply_at IS NOT NULL AND 
-       current_user.can_reapply_at > now() THEN
+    IF user_record.seller_status = 'denied' AND 
+       user_record.can_reapply_at IS NOT NULL AND 
+       user_record.can_reapply_at > now() THEN
         RETURN json_build_object(
             'success', false, 
-            'error', 'Cannot reapply until ' || current_user.can_reapply_at::text
+            'error', 'Cannot reapply until ' || user_record.can_reapply_at::text
         );
     END IF;
     
