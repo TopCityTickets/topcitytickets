@@ -7,13 +7,16 @@ import { supabase } from "@/utils/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Navbar() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, isAdmin, isSeller } = useAuth();
 
   const handleSignOut = async () => {
     const supabaseClient = supabase();
     await supabaseClient.auth.signOut();
     window.location.href = '/';
   };
+
+  // Debug info to help troubleshoot
+  console.log('🎯 [Navbar] State:', { user: !!user, role, loading, isAdmin, isSeller });
 
   return (
     <nav className="dark-navbar sticky top-0 z-50 shadow-2xl">
@@ -27,7 +30,7 @@ export default function Navbar() {
             className="logo-glow pulse-glow"
           />          <span className="brand-text-gradient text-2xl font-black tracking-tight dark-text-glow relative">
             TopCityTickets
-            <span className="absolute -top-1 -right-8 bg-yellow-500 text-black text-xs font-bold px-1.5 py-0.5 rounded-full">
+            <span className="absolute -top-1 -right-8 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full shadow-lg animate-pulse">
               BETA
             </span>
           </span>
@@ -41,17 +44,17 @@ export default function Navbar() {
             <div className="w-20 h-8 animate-pulse bg-muted rounded"></div>
           ) : user ? (
             <>
-              {role === 'admin' && (
+              {isAdmin && (
                 <Button variant="ghost" asChild className="hover:bg-primary/10">
                   <Link href="/admin/dashboard">Admin Dashboard</Link>
                 </Button>
               )}
-              {role === 'seller' && (
+              {isSeller && !isAdmin && (
                 <Button variant="ghost" asChild className="hover:bg-primary/10">
                   <Link href="/seller/dashboard">Seller Dashboard</Link>
                 </Button>
               )}
-              {role === 'user' && (
+              {!isAdmin && !isSeller && (
                 <Button variant="ghost" asChild className="hover:bg-primary/10">
                   <Link href="/dashboard">Dashboard</Link>
                 </Button>

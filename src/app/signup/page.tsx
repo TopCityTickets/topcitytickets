@@ -1,5 +1,6 @@
 "use client";
 
+// Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 import React, { useState } from "react";
@@ -43,7 +44,7 @@ export default function SignUp() {
       setLoading(false);
       return;
     }
-    
+
     if (password !== confirmPassword) {
       setError("Passwords don't match");
       setLoading(false);
@@ -57,42 +58,50 @@ export default function SignUp() {
     }
 
     try {
-      console.log('Attempting manual signup for:', email);
+      console.log('Attempting Supabase signup for:', email);
       
-      // Use our custom manual signup API instead of Supabase auth.signUp
-      const response = await fetch('/api/manual-signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email, 
-          password,
-          firstName: firstName.trim(),
-          lastName: lastName.trim()
-        }),
+      // Use standard Supabase auth.signUp (the proper way)
+      const { data, error } = await supabase().auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+          }
+        }
       });
 
-      const result = await response.json();
-      console.log('Manual signup response:', result);
+      console.log('Supabase signup response:', { data, error });
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Signup failed');
-      }
-      
-      if (result.success) {
-        console.log('User created successfully:', result);
+      if (error) {
+        console.error('Supabase signup error:', error);
         
-        setSuccess('Account created successfully! You can now sign in with your credentials.');
+        if (error.message.includes('already registered')) {
+          setError('An account with this email already exists. Please log in instead.');
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          setError(error.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        console.log('User created successfully:', data.user);
+        setSuccess('Account created! Please check your email for a confirmation link.');
+        
         // Clear form
         setFirstName('');
         setLastName('');
         setEmail('');
         setPassword('');
         setConfirmPassword('');
-        // Redirect to login after a delay
+        
+        // Redirect to login page
         setTimeout(() => {
-          router.push('/login?message=Account created successfully! Please sign in with your credentials.');
+          router.push('/login?message=Account created! Please check your email and then sign in.');
         }, 2000);
       }
     } catch (err) {
@@ -127,8 +136,7 @@ export default function SignUp() {
         <CardContent className="space-y-6">
           {success && (
             <Alert className="border-green-500/50 bg-green-500/10">
-              <Sparkles className="h-4 w-4 text-green-500" />
-              <AlertDescription className="text-green-200">
+              <Sparkles className="h-4 w-4 text-green-500" />              <AlertDescription className="text-green-200">
                 {success}
               </AlertDescription>
             </Alert>
@@ -136,10 +144,10 @@ export default function SignUp() {
 
           {error && (
             <Alert className="border-destructive/50 bg-destructive/10">
-              <AlertCircle className="h-4 w-4 text-destructive" />
-              <AlertDescription className="text-destructive-foreground">
-                {error}
-              </AlertDescription>
+              <AlertCircle className="h-4 w-4 text-destructive" />              <AlertDescription 
+                className="text-destructive-foreground"
+                dangerouslySetInnerHTML={{ __html: error }}
+              />
             </Alert>
           )}
 
@@ -184,12 +192,12 @@ export default function SignUp() {
               <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
                 <Mail className="w-4 h-4" />
                 Email address
-              </Label>
-              <Input
+              </Label>              <Input
                 id="email"
                 type="email"
                 placeholder="Enter your email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -201,12 +209,12 @@ export default function SignUp() {
               <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
                 <Lock className="w-4 h-4" />
                 Password
-              </Label>
-              <Input
+              </Label>              <Input
                 id="password"
                 type="password"
                 placeholder="Create a password (min 6 characters)"
                 required
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
@@ -218,12 +226,12 @@ export default function SignUp() {
               <Label htmlFor="confirmPassword" className="text-sm font-medium flex items-center gap-2">
                 <Lock className="w-4 h-4" />
                 Confirm Password
-              </Label>
-              <Input
+              </Label>              <Input
                 id="confirmPassword"
                 type="password"
                 placeholder="Confirm your password"
                 required
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}

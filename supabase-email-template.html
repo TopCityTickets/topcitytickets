@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your TopCityTickets Account</title>
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #ffffff;
+            background-color: #000000;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0d3d 30%, #2d1b69 60%, #0a0a1a 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(233, 70, 231, 0.3);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #E946E7 0%, #4F7CFF 100%);
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+                radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+                radial-gradient(circle at 40% 70%, rgba(255, 215, 0, 0.15) 2px, transparent 2px);
+            background-size: 50px 50px, 60px 60px, 40px 40px;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .logo-container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+        }
+
+        .brand-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .beta-badge {
+            background-color: #FFD700;
+            color: #000000;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 12px;
+            position: absolute;
+            top: -5px;
+            right: -30px;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #E946E7 0%, #4F7CFF 50%, #FFD700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-text {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .confirm-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #E946E7 0%, #4F7CFF 100%);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 15px 40px;
+            border-radius: 50px;
+            box-shadow: 
+                0 0 30px rgba(233, 70, 231, 0.4),
+                0 8px 16px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .confirm-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 0 40px rgba(233, 70, 231, 0.6),
+                0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .security-note {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(15, 8, 39, 0.6);
+            border: 1px solid rgba(233, 70, 231, 0.2);
+            border-radius: 12px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .footer {
+            padding: 30px;
+            text-align: center;
+            background: rgba(2, 2, 4, 0.8);
+            border-top: 1px solid rgba(233, 70, 231, 0.2);
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .social-links {
+            margin-top: 15px;
+        }
+
+        .social-link {
+            display: inline-block;
+            margin: 0 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #E946E7 50%, transparent 100%);
+            margin: 30px 0;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 12px;
+            }
+            
+            .header {
+                padding: 25px 15px;
+            }
+            
+            .brand-title {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .welcome-title {
+                font-size: 20px;
+            }
+            
+            .confirm-button {
+                padding: 12px 30px;
+                font-size: 14px;
+                min-width: 180px;
+            }
+            
+            .beta-badge {
+                right: -25px;
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="https://vzndqhzpzdphiiblwplh.supabase.co/storage/v1/object/public/pub/logo.png" 
+                     alt="TopCityTickets Logo" 
+                     class="logo">
+                <h1 class="brand-title">
+                    TopCityTickets
+                    <span class="beta-badge">BETA</span>
+                </h1>
+                <p class="tagline">Your Gateway to Unforgettable Events</p>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <h2 class="welcome-title">Welcome to the Future of Events!</h2>
+            <p class="welcome-text">
+                Thank you for joining TopCityTickets! We're excited to have you as part of our community. 
+                To complete your registration and start discovering amazing events in your city, 
+                please confirm your email address.
+            </p>
+
+            <!-- Confirmation Button -->
+            <a href="{{ .ConfirmationURL }}" class="confirm-button">
+                Confirm Your Account
+            </a>
+
+            <!-- Security Note -->
+            <div class="security-note">
+                <strong>� Security Notice:</strong><br>
+                This confirmation link will expire in 24 hours for your security. 
+                If you didn't create an account with TopCityTickets, you can safely ignore this email.
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="welcome-text">
+                Once confirmed, you'll be able to:
+                <br><br>
+                �️ Discover and purchase tickets for the hottest events<br>
+                🎉 Create and manage your own events<br>
+                � Connect with other event enthusiasts<br>
+                🏆 Get early access to exclusive shows and experiences
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p class="footer-text">
+                © 2024 TopCityTickets. All rights reserved.
+            </p>
+            <p class="footer-text">
+                Questions? Contact us at support@topcitytickets.com
+            </p>
+            
+            <div class="social-links">
+                <a href="#" class="social-link">Privacy Policy</a>
+                <a href="#" class="social-link">Terms of Service</a>
+                <a href="#" class="social-link">Help Center</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

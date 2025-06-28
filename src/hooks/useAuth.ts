@@ -38,12 +38,21 @@ export function useAuth() {
                 } else {
                   setRole('user'); // Safe fallback
                 }
-                setLoading(false);
-                return;
+              } else if (mounted) {
+                setUser(null);
+                setRole('user');
               }
             } catch (userError) {
               console.warn('🔧 [useAuth] Could not get user directly, using fallback');
+              if (mounted) {
+                setUser(null);
+                setRole('user');
+              }
             }
+            if (mounted) {
+              setLoading(false);
+            }
+            return;
           }
         }
         
@@ -57,6 +66,7 @@ export function useAuth() {
           if (session.user.email === 'topcitytickets@gmail.com') {
             console.log('🎯 [useAuth] ADMIN USER DETECTED!');
             setRole('admin');
+            setLoading(false);
           } else {
             // For other users, try database but don't fail if it's broken
             console.log('🔍 [useAuth] Checking database for role...');
@@ -81,21 +91,19 @@ export function useAuth() {
               console.warn('⚠️ [useAuth] Database check failed (using fallback):', error);
               setRole('user'); // Safe fallback
             }
+            setLoading(false);
           }
         } else {
           console.log('🚪 [useAuth] No session found');
           setUser(null);
           setRole('user');
+          setLoading(false);
         }
       } catch (error) {
         console.error('❌ [useAuth] Auth check failed:', error);
         if (mounted) {
           setUser(null);
           setRole('user');
-        }
-      } finally {
-        if (mounted) {
-          console.log('✅ [useAuth] Setting loading to false');
           setLoading(false);
         }
       }
@@ -137,6 +145,11 @@ export function useAuth() {
             setUser(null);
             setRole('user');
           }
+          
+          // Always set loading to false after auth state change
+          if (mounted) {
+            setLoading(false);
+          }
         } catch (authError) {
           console.warn('⚠️ [useAuth] Auth change handler error:', authError);
           // Don't fail completely, just log the error
@@ -152,6 +165,11 @@ export function useAuth() {
             setUser(null);
             setRole('user');
           }
+          
+          // Always set loading to false even on error
+          if (mounted) {
+            setLoading(false);
+          }
         }
       }
     );
@@ -165,19 +183,13 @@ export function useAuth() {
   const isAdmin = role === 'admin';
   const isSeller = role === 'seller' || isAdmin;
 
-  console.log('🎯 [useAuth] Final state:', { 
-    email: user?.email, 
-    role, 
-    isAdmin, 
-    isSeller, 
-    loading 
-  });
-
   return {
     user,
     role,
     isAdmin,
     isSeller,
     loading,
+    isAuthenticated: !!user,
+    isUser: role === 'user',
   };
 }
