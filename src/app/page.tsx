@@ -32,7 +32,7 @@ export default function Home() {
       const { data } = await supabaseClient
         .from('events')
         .select('*')
-        .eq('is_approved', true)
+        .eq('is_active', true)
         .limit(6);
       if (data) setEvents(data);
       setLoading(false);

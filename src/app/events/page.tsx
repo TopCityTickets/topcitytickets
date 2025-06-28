@@ -52,7 +52,7 @@ export default function EventsPage() {
         const { data, error } = await supabase()
           .from('events')
           .select('*')
-          .eq('is_approved', true)
+          .eq('is_active', true)
           .order('date', { ascending: true });
         
         if (error) {

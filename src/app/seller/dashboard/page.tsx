@@ -28,7 +28,7 @@ export default function SellerDashboard() {
       const { data } = await supabase()
         .from('event_submissions')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('seller_id', user?.id)
         .order('created_at', { ascending: false });
       
       setSubmissions(data || []);
@@ -42,7 +42,7 @@ export default function SellerDashboard() {
       const { data } = await supabase()
         .from('events')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('seller_id', user?.id)
         .order('created_at', { ascending: false });
       
       setApprovedEvents(data || []);
