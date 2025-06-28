@@ -19,19 +19,19 @@ export default function UserDashboard() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [refundingTickets, setRefundingTickets] = useState<Set<string>>(new Set());
 
-  // Redirect sellers to their seller dashboard
+  // Redirect pure sellers (not admins) to their seller dashboard
   useEffect(() => {
-    if (!loading && isSeller) {
+    if (!loading && role === 'seller') {
       router.replace('/seller/dashboard');
     }
-  }, [loading, isSeller, router]);
+  }, [loading, role, router]);
 
   // Check for existing application when component mounts
   useEffect(() => {
-    if (user && !isSeller && !isAdmin) {
+    if (user && role === 'customer') {
       checkApplicationStatus();
     }
-  }, [user, isSeller, isAdmin]);
+  }, [user, role]);
 
   // Function to check if user has a pending application
   const checkApplicationStatus = async () => {

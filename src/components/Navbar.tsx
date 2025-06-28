@@ -45,16 +45,21 @@ export default function Navbar() {
           ) : user ? (
             <>
               {isAdmin && (
-                <Button variant="ghost" asChild className="hover:bg-primary/10">
-                  <Link href="/admin/dashboard">Admin Dashboard</Link>
-                </Button>
+                <>
+                  <Button variant="ghost" asChild className="hover:bg-primary/10">
+                    <Link href="/admin/dashboard">Admin Dashboard</Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="hover:bg-primary/10">
+                    <Link href="/seller/dashboard">Seller Dashboard</Link>
+                  </Button>
+                </>
               )}
-              {isSeller && !isAdmin && (
+              {role === 'seller' && (
                 <Button variant="ghost" asChild className="hover:bg-primary/10">
                   <Link href="/seller/dashboard">Seller Dashboard</Link>
                 </Button>
               )}
-              {!isAdmin && !isSeller && (
+              {role === 'customer' && (
                 <Button variant="ghost" asChild className="hover:bg-primary/10">
                   <Link href="/dashboard">Dashboard</Link>
                 </Button>
