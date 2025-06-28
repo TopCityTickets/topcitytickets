@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import type { User } from '@supabase/supabase-js';
 
-export type UserRole = 'user' | 'seller' | 'admin';
+export type UserRole = 'customer' | 'seller' | 'admin';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<UserRole>('user');
+  const [role, setRole] = useState<UserRole>('customer');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,17 +36,17 @@ export function useAuth() {
                 if (authUser.email === 'topcitytickets@gmail.com') {
                   setRole('admin');
                 } else {
-                  setRole('user'); // Safe fallback
+                  setRole('customer'); // Safe fallback
                 }
               } else if (mounted) {
                 setUser(null);
-                setRole('user');
+                setRole('customer');
               }
             } catch (userError) {
               console.warn('🔧 [useAuth] Could not get user directly, using fallback');
               if (mounted) {
                 setUser(null);
-                setRole('user');
+                setRole('customer');
               }
             }
             if (mounted) {
@@ -79,31 +79,31 @@ export function useAuth() {
               
               if (dbError) {
                 console.warn('⚠️ [useAuth] Database error (using fallback):', dbError.message);
-                setRole('user'); // Safe fallback
+                setRole('customer'); // Safe fallback
               } else if (userData?.role) {
                 console.log('✅ [useAuth] Database role:', userData.role);
                 setRole(userData.role as UserRole);
               } else {
                 console.log('ℹ️ [useAuth] No role in DB, defaulting to user');
-                setRole('user');
+                setRole('customer');
               }
             } catch (error) {
               console.warn('⚠️ [useAuth] Database check failed (using fallback):', error);
-              setRole('user'); // Safe fallback
+              setRole('customer'); // Safe fallback
             }
             setLoading(false);
           }
         } else {
           console.log('🚪 [useAuth] No session found');
           setUser(null);
-          setRole('user');
+          setRole('customer');
           setLoading(false);
         }
       } catch (error) {
         console.error('❌ [useAuth] Auth check failed:', error);
         if (mounted) {
           setUser(null);
-          setRole('user');
+          setRole('customer');
           setLoading(false);
         }
       }
@@ -138,12 +138,12 @@ export function useAuth() {
                 setRole((userData?.role as UserRole) || 'user');
               } catch (dbError) {
                 console.warn('⚠️ [useAuth] DB error on auth change, using fallback:', dbError);
-                setRole('user');
+                setRole('customer');
               }
             }
           } else {
             setUser(null);
-            setRole('user');
+            setRole('customer');
           }
           
           // Always set loading to false after auth state change
@@ -159,11 +159,11 @@ export function useAuth() {
             if (session.user.email === 'topcitytickets@gmail.com') {
               setRole('admin');
             } else {
-              setRole('user');
+              setRole('customer');
             }
           } else {
             setUser(null);
-            setRole('user');
+            setRole('customer');
           }
           
           // Always set loading to false even on error
@@ -190,6 +190,6 @@ export function useAuth() {
     isSeller,
     loading,
     isAuthenticated: !!user,
-    isUser: role === 'user',
+    isUser: role === 'customer',
   };
 }

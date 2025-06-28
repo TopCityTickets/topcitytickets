@@ -80,12 +80,12 @@ export default function UserDashboard() {
           *,
           events (
             id,
-            name,
+            title,
             date,
             time,
             venue,
             image_url,
-            created_by
+            seller_id
           )
         `)
         .eq('user_id', user.id)
@@ -161,7 +161,7 @@ export default function UserDashboard() {
     if (eventDateTime <= now) return false;
     
     // Admin can refund any ticket, or event creator can refund their event tickets
-    return isAdmin || ticket.events?.created_by === user?.id;
+    return isAdmin || ticket.events?.seller_id === user?.id;
   };
 
   if (loading) {
@@ -436,7 +436,7 @@ export default function UserDashboard() {
                           {ticket.events?.image_url ? (
                             <img 
                               src={ticket.events.image_url} 
-                              alt={ticket.events?.name}
+                              alt={ticket.events?.title}
                               className="w-16 h-16 object-cover rounded-lg"
                             />
                           ) : (
@@ -445,7 +445,7 @@ export default function UserDashboard() {
                             </div>
                           )}
                           <div>
-                            <h3 className="font-semibold text-white">{ticket.events?.name}</h3>
+                            <h3 className="font-semibold text-white">{ticket.events?.title}</h3>
                             <p className="text-sm text-muted-foreground">
                               {ticket.events?.date} at {ticket.events?.time}
                             </p>

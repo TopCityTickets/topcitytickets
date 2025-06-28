@@ -161,11 +161,11 @@ export default function AdminDashboard() {
           *,
           events (
             id,
-            name,
+            title,
             date,
             time,
             venue,
-            created_by
+            seller_id
           ),
           users (
             id,
@@ -541,7 +541,7 @@ export default function AdminDashboard() {
                               <FileText className="w-6 h-6 text-muted-foreground" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-white">{ticket.events?.name}</h3>
+                              <h3 className="font-semibold text-white">{ticket.events?.title}</h3>
                               <p className="text-sm text-muted-foreground">
                                 {ticket.events?.date} at {ticket.events?.time}
                               </p>
