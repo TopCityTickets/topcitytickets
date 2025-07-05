@@ -100,11 +100,11 @@ export default function AdminDashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('role', 'seller');
 
-      // Get pending applications (is_active = false)
+      // Get pending applications from users table
       const { count: pendingApplications } = await client
-        .from('seller_applications')
+        .from('users')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', false);      // Get total events
+        .eq('seller_status', 'pending');      // Get total events
       const { count: totalEvents } = await client
         .from('events')
         .select('*', { count: 'exact', head: true });
