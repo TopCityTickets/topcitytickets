@@ -15,6 +15,13 @@ export async function GET() {
       }
     );
 
+    // Get admin user
+    const { data: adminUser, error: adminError } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('email', 'topcitytickets@gmail.com')
+      .single();
+
     // Get all users with seller_status info
     const { data: allUsers, error: allUsersError } = await supabase
       .from('users')
@@ -38,6 +45,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       debug: {
+        adminUser: adminUser || null,
+        adminError: adminError?.message || null,
         allUsersCount: allUsers?.length || 0,
         allUsers: allUsers || [],
         pendingUsersCount: pendingUsers?.length || 0,
