@@ -21,6 +21,11 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Add error handling
+    domains: ['vzndqhzpzdphiiblwplh.supabase.co'],
   },
   // Webpack configuration
   webpack: (config) => {
