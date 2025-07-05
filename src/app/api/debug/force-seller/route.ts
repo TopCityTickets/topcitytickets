@@ -24,17 +24,11 @@ export async function POST(request: Request) {
       }
     );
 
-    // Update user to be a seller
+    // Update user to be a seller (only update fields that definitely exist)
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({
         role: 'seller',
-        seller_status: 'approved',
-        seller_approved_at: new Date().toISOString(),
-        seller_applied_at: new Date().toISOString(),
-        seller_business_name: 'Test Business',
-        seller_business_type: 'individual',
-        seller_contact_email: email,
         updated_at: new Date().toISOString()
       })
       .eq('email', email)
