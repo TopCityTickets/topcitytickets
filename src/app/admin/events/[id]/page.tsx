@@ -48,7 +48,7 @@ export default function AdminEventReview() {
         return;
       }
 
-      console.log('🚀 Starting approval via API for:', event.name);
+      console.log('🚀 Starting approval via API for:', event.title);
       console.log('📋 Event ID:', event.id);
 
       const response = await fetch(`/api/admin/events/${event.id}`, {
@@ -86,7 +86,7 @@ export default function AdminEventReview() {
       
       // Show success message with shareable URL
       const eventUrl = `${window.location.origin}${result.eventUrl}`;
-      alert(`✅ ${result.message}\n\nThe event "${result.event.name}" is now live and can be found at:\n${eventUrl}\n\nThis URL can be shared for ticket sales.`);
+      alert(`✅ ${result.message}\n\nThe event "${result.event.title}" is now live and can be found at:\n${eventUrl}\n\nThis URL can be shared for ticket sales.`);
       
     } catch (error: any) {
       console.error('❌ Approval error:', error);
@@ -171,7 +171,7 @@ export default function AdminEventReview() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-2xl font-bold text-white mb-2">{event.name}</h2>
+                      <h2 className="text-2xl font-bold text-white mb-2">{event.title}</h2>
                       <p className="text-muted-foreground">
                         Submitted: {new Date(event.created_at || '').toLocaleDateString()}
                       </p>
@@ -229,7 +229,7 @@ export default function AdminEventReview() {
                           <h4 className="font-semibold text-white mb-2">🖼️ Event Image</h4>
                           <img 
                             src={event.image_url} 
-                            alt={event.name}
+                            alt={event.title}
                             className="w-full h-48 object-cover rounded-lg border border-muted/20"
                           />
                         </div>

@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ Event found:', event.name);
+    console.log('✅ Event found:', event.title);
     console.log('Seller Stripe Connect enabled:', event.creator?.stripe_connect_enabled);
 
     // Check if seller has Stripe Connect set up
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         event_id: eventId,
         user_id: user.id,
-        event_name: event.name,
+        event_name: event.title,
         seller_id: event.created_by,
       },
       automatic_payment_methods: {

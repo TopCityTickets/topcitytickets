@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,16 @@ import { Users, ShoppingCart, Calendar, CheckCircle, XCircle, Clock, Settings, F
 
 interface SellerApplication {
   id: string;
-  user_id: string;
-  status: 'pending' | 'approved' | 'rejected';
-  applied_at?: string;
-  created_at?: string;
-  users?: {
-    email: string;
-  };
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  seller_business_name: string;
+  seller_business_type: string;
+  seller_description?: string | null;
+  seller_contact_email: string;
+  seller_contact_phone?: string | null;
+  website_url?: string | null;
+  seller_applied_at: string;
 }
 
 export default function AdminDashboard() {
@@ -44,7 +47,7 @@ export default function AdminDashboard() {
 
   const fetchSubmissions = async () => {
     try {
-      const { data } = await supabase()
+      const { data } = await createClient()
         .from('event_submissions')
         .select('*')
         .eq('status', 'pending')
@@ -59,54 +62,23 @@ export default function AdminDashboard() {
     try {
       console.log('Fetching seller applications...');
       
-      // Try the nested query first
-      const { data: nestedData, error: nestedError } = await supabase()
-        .from('seller_applications')
-        .select(`
-          *,
-          users (
-            email
-          )
-        `)
-        .order('applied_at', { ascending: false });
+      // Use the new admin reviews API that fetches from users table
+      const response = await fetch(`/api/admin/reviews?adminId=${user?.id}&type=seller-applications`);
       
-      if (nestedError) {
-        console.warn('Nested query failed, trying manual join:', nestedError);
-        
-        // Fallback to manual join
-        const { data: manualData, error: manualError } = await supabase()
-          .from('seller_applications')
-          .select('*')
-          .order('applied_at', { ascending: false });
-        
-        if (manualError) {
-          console.error('Manual query also failed:', manualError);
-          setApplications([]);
-          return;
-        }
-        
-        // Get user emails separately
-        const applicationsWithEmails = await Promise.all(
-          (manualData || []).map(async (app) => {
-            const { data: userData } = await supabase()
-              .from('users')
-              .select('email')
-              .eq('id', app.user_id)
-              .single();
-            
-            return {
-              ...app,
-              users: userData ? { email: userData.email } : { email: 'Unknown' }
-            };
-          })
-        );
-        
-        console.log('Manual join successful, applications:', applicationsWithEmails);
-        setApplications(applicationsWithEmails);
-      } else {
-        console.log('Nested query successful, applications:', nestedData);
-        setApplications(nestedData || []);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        console.error('Error fetching seller applications:', result.error);
+        setApplications([]);
+        return;
+      }
+      
+      console.log('Seller applications fetched successfully:', result.data.sellerApplications);
+      setApplications(result.data.sellerApplications || []);
     } catch (error) {
       console.error('Error fetching applications:', error);
       setApplications([]);
@@ -115,7 +87,7 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const client = supabase();
+      const client = createClient();
       
       // Get total users
       const { count: totalUsers } = await client
@@ -128,11 +100,11 @@ export default function AdminDashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('role', 'seller');
 
-      // Get pending applications
+      // Get pending applications (is_active = false)
       const { count: pendingApplications } = await client
         .from('seller_applications')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');      // Get total events
+        .eq('is_active', false);      // Get total events
       const { count: totalEvents } = await client
         .from('events')
         .select('*', { count: 'exact', head: true });
@@ -155,7 +127,7 @@ export default function AdminDashboard() {
 
   const fetchTickets = async () => {
     try {
-      const { data, error } = await supabase()
+      const { data, error } = await createClient()
         .from('tickets')
         .select(`
           *,
@@ -193,19 +165,10 @@ export default function AdminDashboard() {
     setRefundingTickets(prev => new Set(prev).add(ticketId));
     
     try {
-      const supabaseClient = supabase();
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      
-      if (!session?.access_token) {
-        alert('Please log in again to refund tickets.');
-        return;
-      }
-
       const response = await fetch('/api/refund-ticket', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ ticketId }),
       });
@@ -244,10 +207,10 @@ export default function AdminDashboard() {
   };
   const handleApplicationAction = async (applicationId: string, action: 'approved' | 'rejected') => {
     try {
-      // First, get the application to find the user_id
-      const { data: application, error: fetchError } = await supabase()
+      // First, get the application to find the seller_id
+      const { data: application, error: fetchError } = await createClient()
         .from('seller_applications')
-        .select('user_id')
+        .select('seller_id, notes')
         .eq('id', applicationId)
         .single();
 
@@ -257,14 +220,26 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Update the application status
-      const { error: updateError } = await supabase()
+      // Update the application status - use is_active for approval
+      const updateData: any = { 
+        updated_at: new Date().toISOString()
+      };
+      
+      if (action === 'approved') {
+        updateData.is_active = true;
+        if (application?.notes) {
+          updateData.notes = `Approved: ${application.notes}`;
+        } else {
+          updateData.notes = 'Approved by admin';
+        }
+      } else {
+        updateData.is_active = false;
+        updateData.notes = 'Rejected by admin';
+      }
+
+      const { error: updateError } = await createClient()
         .from('seller_applications')
-        .update({ 
-          status: action,
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id
-        })
+        .update(updateData)
         .eq('id', applicationId);
 
       if (updateError) {
@@ -274,11 +249,11 @@ export default function AdminDashboard() {
       }
 
       // If approved, update the user's role to seller
-      if (action === 'approved' && application?.user_id) {
-        const { error: roleError } = await supabase()
+      if (action === 'approved' && application?.seller_id) {
+        const { error: roleError } = await createClient()
           .from('users')
           .update({ role: 'seller' })
-          .eq('id', application.user_id);
+          .eq('id', application.seller_id);
 
         if (roleError) {
           console.error('Error updating user role:', roleError);
@@ -428,45 +403,40 @@ export default function AdminDashboard() {
                     <Card key={app.id} className="ultra-dark-card">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div>                            <p className="font-semibold">{app.users?.email || 'Unknown user'}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Applied: {app.applied_at 
-                                ? new Date(app.applied_at).toLocaleDateString() 
-                                : app.created_at 
-                                  ? new Date(app.created_at).toLocaleDateString()
-                                  : 'Unknown date'
-                              }
+                          <div className="flex-1">
+                            <p className="font-semibold">{app.seller_business_name}</p>
+                            <p className="text-sm text-muted-foreground">{app.seller_contact_email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {app.seller_business_type} • Applied: {new Date(app.seller_applied_at).toLocaleDateString()}
                             </p>
+                            {app.seller_description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {app.seller_description}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge 
-                              variant={
-                                app.status === 'pending' ? 'secondary' :
-                                app.status === 'approved' ? 'default' : 'destructive'
-                              }
-                            >
-                              {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                            <Badge variant="secondary">
+                              Pending
                             </Badge>
-                            {app.status === 'pending' && (
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleApplicationAction(app.id, 'approved')}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  <CheckCircle className="w-4 h-4 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleApplicationAction(app.id, 'rejected')}
-                                >
-                                  <XCircle className="w-4 h-4 mr-1" />
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApplicationAction(app.id, 'approved')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleApplicationAction(app.id, 'rejected')}
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardContent>

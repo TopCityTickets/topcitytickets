@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export default function SellerDashboard() {
 
   const fetchMySubmissions = async () => {
     try {
-      const { data } = await supabase()
+      const { data } = await createClient()
         .from('event_submissions')
         .select('*')
         .eq('seller_id', user?.id)
@@ -39,7 +39,7 @@ export default function SellerDashboard() {
 
   const fetchMyApprovedEvents = async () => {
     try {
-      const { data } = await supabase()
+      const { data } = await createClient()
         .from('events')
         .select('*')
         .eq('seller_id', user?.id)
@@ -234,7 +234,7 @@ export default function SellerDashboard() {
                   <Card key={event.id} className="ultra-dark-card">
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-semibold text-white">{event.name}</h3>
+                        <h3 className="text-xl font-semibold text-white">{event.title}</h3>
                         <Badge variant="default">Live</Badge>
                       </div>
                       <p className="text-muted-foreground mb-4">{event.description}</p>

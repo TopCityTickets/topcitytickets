@@ -41,12 +41,31 @@ export async function POST(request: NextRequest) {
       console.log('Payment completed:', session.id);
       
       // Extract metadata
-      const { eventId, userId } = session.metadata || {};
+      const { eventId, userId, userEmail, customerName, isAnonymous } = session.metadata || {};
       
-      if (!eventId || !userId) {
-        console.error('Missing metadata in session:', session.metadata);
+      if (!eventId) {
+        console.error('Missing eventId in session:', session.metadata);
         return NextResponse.json(
-          { error: 'Missing event or user data' },
+          { error: 'Missing event data' },
+          { status: 400 }
+        );
+      }
+
+      const isAnonymousPurchase = isAnonymous === 'true';
+      console.log('Purchase type:', isAnonymousPurchase ? 'Anonymous' : 'Authenticated');
+
+      if (!isAnonymousPurchase && !userId) {
+        console.error('Missing userId for authenticated purchase:', session.metadata);
+        return NextResponse.json(
+          { error: 'Missing user data for authenticated purchase' },
+          { status: 400 }
+        );
+      }
+
+      if (isAnonymousPurchase && !userEmail) {
+        console.error('Missing userEmail for anonymous purchase:', session.metadata);
+        return NextResponse.json(
+          { error: 'Missing email for anonymous purchase' },
           { status: 400 }
         );
       }
@@ -54,15 +73,21 @@ export async function POST(request: NextRequest) {
       // Create the ticket in the database
       const supabaseClient = supabase();
       
+      const ticketData = {
+        event_id: eventId,
+        user_id: isAnonymousPurchase ? null : userId,
+        customer_email: isAnonymousPurchase ? userEmail : null,
+        customer_name: isAnonymousPurchase ? customerName : null,
+        stripe_payment_intent_id: session.payment_intent as string,
+        purchase_amount: (session.amount_total || 0) / 100, // Convert from cents
+        status: 'valid',
+      };
+
+      console.log('Creating ticket with data:', ticketData);
+      
       const { data: ticket, error: ticketError } = await supabaseClient
         .from('tickets')
-        .insert({
-          event_id: eventId,
-          user_id: userId,
-          stripe_payment_intent_id: session.payment_intent as string,
-          purchase_amount: (session.amount_total || 0) / 100, // Convert from cents
-          status: 'valid',
-        })
+        .insert(ticketData)
         .select('*')
         .single();
 

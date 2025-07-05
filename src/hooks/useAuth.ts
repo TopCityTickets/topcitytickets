@@ -1,149 +1,142 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/utils/supabase';
+import { useState, useEffect, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 export type UserRole = 'customer' | 'seller' | 'admin';
 
+// Global state to prevent multiple instances
+let globalAuthState: {
+  user: User | null;
+  role: UserRole;
+  loading: boolean;
+  initialized: boolean;
+} = {
+  user: null,
+  role: 'customer',
+  loading: true,
+  initialized: false
+};
+
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<UserRole>('customer');
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(globalAuthState.user);
+  const [role, setRole] = useState<UserRole>(globalAuthState.role);
+  const [loading, setLoading] = useState<boolean>(globalAuthState.loading);
+  const initializationAttempted = useRef(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    const client = supabase();
-    let mounted = true;
-    let initialCheckComplete = false;
+    // Prevent multiple initializations
+    if (initializationAttempted.current || globalAuthState.initialized) {
+      // Use existing global state
+      setUser(globalAuthState.user);
+      setRole(globalAuthState.role);
+      setLoading(globalAuthState.loading);
+      return;
+    }
 
-    // Helper function to determine role
-    const determineRole = async (authUser: User): Promise<UserRole> => {
-      // Admin check first (fastest)
-      if (authUser.email === 'topcitytickets@gmail.com') {
-        console.log('🎯 [useAuth] Admin user detected');
-        return 'admin';
-      }
+    initializationAttempted.current = true;
+    const client = createClient();
 
-      // For other users, try database lookup with timeout
-      try {
-        console.log('� [useAuth] Checking database for role...');
-        const { data: userData, error: dbError } = await client
-          .from('users')
-          .select('role')
-          .eq('id', authUser.id)
-          .single();
-        
-        if (dbError || !userData?.role) {
-          console.warn('⚠️ [useAuth] Database lookup failed, defaulting to customer:', dbError?.message);
-          return 'customer';
-        }
-        
-        console.log('✅ [useAuth] Database role:', userData.role);
-        return userData.role as UserRole;
-      } catch (error) {
-        console.warn('⚠️ [useAuth] Role lookup error, defaulting to customer:', error);
-        return 'customer';
-      }
-    };
-
-    const updateAuthState = async (authUser: User | null, skipLoading = false) => {
-      if (!mounted) return;
-
-      try {
-        if (authUser) {
-          setUser(authUser);
-          const userRole = await determineRole(authUser);
-          setRole(userRole);
-        } else {
-          setUser(null);
-          setRole('customer');
-        }
-      } catch (error) {
-        console.error('❌ [useAuth] Error updating auth state:', error);
-        if (mounted) {
-          setUser(authUser);
-          setRole('customer'); // Safe fallback
-        }
-      } finally {
-        if (mounted && !skipLoading) {
-          setLoading(false);
-        }
+    const updateGlobalState = (newUser: User | null, newRole: UserRole, newLoading: boolean) => {
+      globalAuthState = { user: newUser, role: newRole, loading: newLoading, initialized: true };
+      if (mountedRef.current) {
+        setUser(newUser);
+        setRole(newRole);
+        setLoading(newLoading);
       }
     };
 
     const checkAuth = async () => {
       try {
-        console.log('🔍 [useAuth] Initial auth check...');
+        console.log('🔍 [useAuth] Single auth check starting...');
+        
         const { data: { session }, error } = await client.auth.getSession();
         
         if (error) {
-          console.error('❌ [useAuth] Session error:', error);
-          // Handle hook errors gracefully
-          if (error.message?.includes('custom_access_token_hook') || 
-              error.message?.includes('hook') || 
-              error.message?.includes('pg-functions')) {
-            console.warn('🔧 [useAuth] Auth hook error, trying direct user lookup...');
-            try {
-              const { data: { user: authUser } } = await client.auth.getUser();
-              await updateAuthState(authUser);
-            } catch (userError) {
-              console.warn('🔧 [useAuth] Direct user lookup failed');
-              await updateAuthState(null);
-            }
+          console.warn('⚠️ [useAuth] Session error, using fallback:', error.message);
+          updateGlobalState(null, 'customer', false);
+          return;
+        }
+
+        if (session?.user) {
+          console.log('✅ [useAuth] User found:', session.user.email);
+          
+          // Quick admin check
+          if (session.user.email === 'topcitytickets@gmail.com') {
+            console.log('🎯 [useAuth] Admin detected');
+            updateGlobalState(session.user, 'admin', false);
           } else {
-            await updateAuthState(null);
+            // For regular users, try quick DB check but don't block
+            updateGlobalState(session.user, 'customer', false);
+            
+            // Async role update (non-blocking)
+            (async () => {
+              try {
+                const { data, error } = await client
+                  .from('users')
+                  .select('role')
+                  .eq('id', session.user.id)
+                  .single();
+                  
+                if (!error && data?.role && mountedRef.current) {
+                  const dbRole = data.role as UserRole;
+                  console.log('✅ [useAuth] Updated role from DB:', dbRole);
+                  globalAuthState.role = dbRole;
+                  setRole(dbRole);
+                }
+              } catch (err) {
+                console.warn('⚠️ [useAuth] DB role check failed:', err);
+              }
+            })();
           }
         } else {
-          await updateAuthState(session?.user || null);
+          console.log('🚪 [useAuth] No session found');
+          updateGlobalState(null, 'customer', false);
         }
       } catch (error) {
         console.error('❌ [useAuth] Auth check failed:', error);
-        await updateAuthState(null);
-      } finally {
-        initialCheckComplete = true;
+        updateGlobalState(null, 'customer', false);
       }
     };
 
-    // Initial check
+    // Single timeout for the entire app
+    const timeoutId = setTimeout(() => {
+      if (!globalAuthState.initialized) {
+        console.warn('⏰ [useAuth] Auth timeout - using fallback state');
+        updateGlobalState(null, 'customer', false);
+      }
+    }, 3000);
+
+    // Start auth check
     checkAuth();
 
-    // Auth state change listener
+    // Single auth listener for the entire app
     const { data: { subscription } } = client.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
+      (event: any, session: any) => {
+        if (!mountedRef.current) return;
         
         console.log('🔄 [useAuth] Auth state changed:', event);
         
-        // Skip if initial check is still running to avoid race conditions
-        if (!initialCheckComplete && event === 'INITIAL_SESSION') {
-          console.log('⏭️ [useAuth] Skipping INITIAL_SESSION - already checking...');
-          return;
-        }
-        
-        try {
-          await updateAuthState(session?.user || null, true);
-        } catch (error) {
-          console.error('❌ [useAuth] Auth state change error:', error);
-          if (mounted) {
-            setUser(session?.user || null);
-            setRole('customer');
-          }
+        if (session?.user) {
+          const newRole = session.user.email === 'topcitytickets@gmail.com' ? 'admin' : 'customer';
+          updateGlobalState(session.user, newRole, false);
+        } else {
+          updateGlobalState(null, 'customer', false);
         }
       }
     );
 
-    // Timeout fallback to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('⏰ [useAuth] Auth check timeout, setting loading to false');
-        setLoading(false);
-      }
-    }, 5000); // 5 second timeout
-
     return () => {
-      mounted = false;
       clearTimeout(timeoutId);
       subscription.unsubscribe();
+    };
+  }, []); // Keep empty deps
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
     };
   }, []);
 

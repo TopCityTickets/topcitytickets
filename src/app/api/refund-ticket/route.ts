@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/utils/supabase';
+import { createClient } from '@/lib/supabase/server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-05-28.basil',
@@ -14,24 +14,14 @@ export async function POST(request: NextRequest) {
     console.log('Ticket ID:', ticketId);
     console.log('Refund reason:', reason);
 
-    // Get the current user
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      console.log('❌ No authorization header');
-      return NextResponse.json(
-        { error: 'Authorization required' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseClient = supabase();
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    // Get the current user using server-side authentication
+    const supabaseClient = createClient();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
       console.log('❌ Auth error:', authError);
       return NextResponse.json(
-        { error: 'Invalid authorization' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -74,15 +64,18 @@ export async function POST(request: NextRequest) {
     const isAdmin = userData?.role === 'admin';
     const isEventCreator = ticket.events?.user_id === user.id;
 
+    // Only admins and event creators can process refunds
     if (!isAdmin && !isEventCreator) {
-      console.log('❌ Permission denied');
+      console.log('❌ Permission denied - User:', user.id, 'Event creator:', ticket.events?.user_id, 'Is admin:', isAdmin);
       return NextResponse.json(
-        { error: 'You do not have permission to refund this ticket' },
+        { error: 'Only admins and event creators can process refunds' },
         { status: 403 }
       );
     }
 
-    console.log('✅ Permission granted:', isAdmin ? 'Admin' : 'Event Creator');
+    console.log('✅ Permission granted:', 
+      isAdmin ? 'Admin' : 'Event Creator'
+    );
 
     // Check if ticket is already refunded
     if (ticket.status === 'refunded') {

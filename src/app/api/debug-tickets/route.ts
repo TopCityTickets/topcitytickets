@@ -10,7 +10,7 @@ export async function GET() {
       .from('tickets')
       .select(`
         *,
-        events(name, venue, date)
+        events(title, venue, date)
       `)
       .eq('event_id', 'bbbf6e59-cd48-479f-a9f3-22e9871c65e9')
       .order('created_at', { ascending: false });

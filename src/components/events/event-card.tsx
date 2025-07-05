@@ -25,7 +25,7 @@ export default function EventCard({ event, viewMode = 'grid' }: EventCardProps) 
           <div className="relative w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 overflow-hidden">
             <Image
               src={imageUrl}
-              alt={event.name}
+              alt={event.title}
               fill
               className="object-cover"
               onError={() => setImageError(true)}
@@ -44,7 +44,7 @@ export default function EventCard({ event, viewMode = 'grid' }: EventCardProps) 
         <div className="flex-1 p-6">
           <Link href={`/events/${event.slug || event.id}`}>
             <CardTitle className="text-xl font-headline mb-2 hover:text-primary transition-colors line-clamp-1">
-              {event.name}
+              {event.title}
             </CardTitle>
           </Link>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
@@ -87,7 +87,7 @@ export default function EventCard({ event, viewMode = 'grid' }: EventCardProps) 
           <div className="relative w-full h-48 bg-gradient-to-br from-primary/20 to-secondary/20 overflow-hidden">
             <Image
               src={imageUrl}
-              alt={event.name}
+              alt={event.title}
               fill
               className="object-cover hover:scale-105 transition-transform duration-300"
               onError={() => setImageError(true)}
@@ -114,7 +114,7 @@ export default function EventCard({ event, viewMode = 'grid' }: EventCardProps) 
       <CardContent className="p-6 flex-grow">
         <Link href={`/events/${event.slug || event.id}`}>
           <CardTitle className="text-xl font-headline mb-2 hover:text-primary transition-colors line-clamp-2">
-            {event.name}
+            {event.title}
           </CardTitle>
         </Link>
         <div className="space-y-2 text-sm text-muted-foreground mb-3">

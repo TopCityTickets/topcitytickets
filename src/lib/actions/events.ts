@@ -31,7 +31,7 @@ export async function submitEvent(prevState: SubmitEventState, formData: FormDat
     };
   }
   const eventData = {
-    name: formData.get('name'),
+    title: formData.get('title'),
     description: formData.get('description'),
     date: formData.get('date'),
     time: formData.get('time'),
@@ -39,7 +39,7 @@ export async function submitEvent(prevState: SubmitEventState, formData: FormDat
     ticket_price: Number(formData.get('ticketPrice')),
     organizer_email: formData.get('organizerEmail'),
     image_url: formData.get('imageUrl') || null,
-    user_id: user.id,
+    seller_id: user.id,
     status: 'pending' as const,
   };
 

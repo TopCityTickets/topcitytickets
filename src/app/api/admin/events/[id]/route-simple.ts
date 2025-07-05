@@ -43,11 +43,11 @@ export async function POST(
       );
     }
 
-    console.log('Found submission:', submission.name);
+    console.log('Found submission:', submission.title);
 
     if (action === 'approve') {
       // Generate unique slug
-      const baseSlug = submission.name
+      const baseSlug = submission.title
         .toLowerCase()
         .replace(/[^a-z0-9 -]/g, '')
         .replace(/\s+/g, '-')
@@ -76,7 +76,7 @@ export async function POST(
 
       // Step 2: Create public event
       const eventData = {
-        name: submission.name,
+        title: submission.title,
         description: submission.description || '',
         date: submission.date,
         time: submission.time,
@@ -86,14 +86,14 @@ export async function POST(
         slug: slug,
         user_id: submission.user_id,
         organizer_email: submission.organizer_email,
-        is_approved: true
+        is_active: true
       };
 
       console.log('Creating public event...');
       const { data: newEvent, error: insertError } = await supabaseClient
         .from('events')
         .insert(eventData)
-        .select('id, name')
+        .select('id, title')
         .single();
 
       if (insertError) {

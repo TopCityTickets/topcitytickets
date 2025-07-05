@@ -58,8 +58,8 @@ export default function Home() {
             <span className="brand-text-gradient">
               Tickets
             </span>
-            <span className="absolute -top-4 -right-4 bg-yellow-500 text-black text-lg font-bold px-3 py-1 rounded-full animate-pulse">
-              BETA
+            <span className="absolute -top-6 -right-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-lg font-bold px-4 py-2 rounded-full shadow-xl border-2 border-white/30 animate-pulse glow-effect">
+              🌟 BETA
             </span>
           </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-4 max-w-2xl mx-auto font-medium">

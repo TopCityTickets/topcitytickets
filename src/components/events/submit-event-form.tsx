@@ -1,21 +1,46 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, ClockIcon, DollarSignIcon, ImageIcon, InfoIcon, MapPinIcon, TagIcon, UserIcon, UploadIcon, XIcon } from 'lucide-react';
+import { CalendarIcon, ClockIcon, DollarSignIcon, ImageIcon, InfoIcon, MapPinIcon, TagIcon, UserIcon, UploadIcon, XIcon, AlertCircle } from 'lucide-react';
 import { supabase } from '@/utils/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function SubmitEventForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [stripeConnected, setStripeConnected] = useState<boolean | null>(null);
+  const [checkingStripe, setCheckingStripe] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+
+  // Check Stripe Connect status on component mount
+  useEffect(() => {
+    checkStripeStatus();
+  }, [user]);
+
+  const checkStripeStatus = async () => {
+    if (!user) return;
+    
+    setCheckingStripe(true);
+    try {
+      const response = await fetch('/api/stripe-connect/status');
+      const data = await response.json();
+      setStripeConnected(data.connected && data.accountEnabled);
+    } catch (error) {
+      console.error('Error checking Stripe status:', error);
+      setStripeConnected(false);
+    } finally {
+      setCheckingStripe(false);
+    }
+  };
 
   // Handle image upload to Supabase storage
   const handleImageUpload = async (file: File) => {
@@ -180,15 +205,57 @@ export default function SubmitEventForm() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Card className="shadow-xl">        <CardHeader>
-          <CardTitle className="text-3xl font-headline">Submit Your Event</CardTitle>
-          <CardDescription>
-            Fill out the form below to request your event to be listed on Top City Tickets. 
-            All submissions are reviewed by our admin team within 1-2 business days before going live.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit} ref={formRef}>
-          <CardContent className="space-y-6">
+      {/* Stripe Connect Requirement Check */}
+      {checkingStripe ? (
+        <Card className="shadow-xl mb-6">
+          <CardContent className="p-6 text-center">
+            <div className="animate-pulse">
+              <div className="w-16 h-16 bg-primary/20 rounded-full mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Checking payment setup...</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : !stripeConnected ? (
+        <Card className="shadow-xl mb-6 border-orange-500/50 bg-orange-500/5">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-orange-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-orange-500 mb-2">
+                  Stripe Connect Required
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  You need to connect your Stripe account before submitting events. This ensures you can receive payments when tickets are sold.
+                </p>
+                <Button 
+                  onClick={() => window.location.href = '/api/stripe-connect/setup'}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  Connect Stripe Account First
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Card className="shadow-xl">        {stripeConnected === false ? (
+          <CardContent className="p-8 text-center text-muted-foreground">
+            <AlertCircle className="w-16 h-16 mx-auto mb-4 text-orange-500" />
+            <h3 className="text-xl font-semibold mb-2">Payment Setup Required</h3>
+            <p className="mb-4">Connect your Stripe account to submit events and receive payments.</p>
+          </CardContent>
+        ) : (
+          <>
+            <CardHeader>
+              <CardTitle className="text-3xl font-headline">Submit Your Event</CardTitle>
+              <CardDescription>
+                Fill out the form below to request your event to be listed on Top City Tickets. 
+                All submissions are reviewed by our admin team within 1-2 business days before going live.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit} ref={formRef}>
+              <CardContent className="space-y-6">
             <div>
               <Label htmlFor="name">Event Name</Label>
               <div className="relative mt-1">
@@ -336,11 +403,13 @@ export default function SubmitEventForm() {
                 </p>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" disabled={isSubmitting || !stripeConnected}>
               {isSubmitting ? 'Submitting Event...' : 'Submit Event for Approval'}
             </Button>
           </CardFooter>
         </form>
+        </>
+      )}
       </Card>
     </div>
   );

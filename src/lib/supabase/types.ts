@@ -8,7 +8,7 @@ export type TypedSupabaseClient = SupabaseClient<Database>;
 // Define the expected shapes of database rows for direct casting
 export type EventSubmission = {
   id: string;
-  name: string;
+  title: string;
   description: string;
   date: string;
   time: string;

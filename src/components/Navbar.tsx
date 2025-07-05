@@ -3,11 +3,34 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/utils/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const { user, role, loading, isAdmin, isSeller } = useAuth();
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+
+  // Fetch user profile picture when user is loaded
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        const supabaseClient = supabase();
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('profile_picture_url, avatar_url')
+          .eq('id', user.id)
+          .single();
+        
+        if (data && !error) {
+          setProfilePictureUrl(data.profile_picture_url || data.avatar_url);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   const handleSignOut = async () => {
     const supabaseClient = supabase();
@@ -28,12 +51,15 @@ export default function Navbar() {
             width={50} 
             height={50}
             className="logo-glow pulse-glow"
-          />          <span className="brand-text-gradient text-2xl font-black tracking-tight dark-text-glow relative">
-            TopCityTickets
-            <span className="absolute -top-1 -right-8 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full shadow-lg animate-pulse">
+          />
+          <div className="relative">
+            <span className="brand-text-gradient text-2xl font-black tracking-tight dark-text-glow">
+              TopCityTickets
+            </span>
+            <span className="absolute -top-2 left-full ml-2 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg border border-white/30 animate-pulse whitespace-nowrap glow-effect">
               BETA
             </span>
-          </span>
+          </div>
         </Link>
 
         <div className="flex gap-4 items-center">          <Link href="/events" className="text-muted-foreground hover:text-primary transition-colors font-medium">
@@ -64,9 +90,21 @@ export default function Navbar() {
                   <Link href="/dashboard">Dashboard</Link>
                 </Button>
               )}
-              <Button variant="outline" onClick={handleSignOut} className="border-primary/30 hover:bg-primary/10">
-                Sign Out ({user.email?.split('@')[0]})
-              </Button>            </>
+              
+              {/* User Avatar and Sign Out */}
+              <div className="flex items-center gap-3">
+                <Link href="/dashboard/profile" className="hover:opacity-80 transition-opacity">
+                  <Avatar className="w-8 h-8 border border-primary/30">
+                    <AvatarImage src={profilePictureUrl || undefined} alt="Profile" />
+                    <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+                <Button variant="outline" onClick={handleSignOut} className="border-primary/30 hover:bg-primary/10">
+                  Sign Out
+                </Button>
+              </div>            </>
           ) : (
             <>
               <Button variant="ghost" asChild className="hover:bg-primary/10">

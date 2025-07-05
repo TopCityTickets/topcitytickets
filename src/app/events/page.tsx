@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/utils/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ export default function EventsPage() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = events.filter(event => 
-        event.name?.toLowerCase().includes(query) ||
+        event.title?.toLowerCase().includes(query) ||
         event.description?.toLowerCase().includes(query) ||
         event.venue?.toLowerCase().includes(query) ||
         event.organizer_email?.toLowerCase().includes(query)
@@ -36,7 +36,7 @@ export default function EventsPage() {
     return filtered.sort((a, b) => {
       switch (sortBy) {
         case "name":
-          return (a.name || "").localeCompare(b.name || "");
+          return (a.title || "").localeCompare(b.title || "");
         case "price":
           return (a.ticket_price || 0) - (b.ticket_price || 0);
         case "date":
@@ -49,7 +49,7 @@ export default function EventsPage() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const { data, error } = await supabase()
+        const { data, error } = await createClient()
           .from('events')
           .select('*')
           .eq('is_active', true)

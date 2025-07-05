@@ -9,12 +9,16 @@ import { supabase } from '@/utils/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, ShoppingCart, Settings, FileText, CheckCircle, Clock, AlertCircle, XCircle, RefreshCw } from 'lucide-react';
+import SellerApplicationForm from '@/components/seller/SellerApplicationForm';
+import EmailVerification from '@/components/auth/email-verification';
 
 export default function UserDashboard() {
   const { user, role, loading, isAdmin, isSeller } = useAuth();
   const router = useRouter();
-  const [applying, setApplying] = useState(false);  const [applicationStatus, setApplicationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
-  const [applicationDetails, setApplicationDetails] = useState<any>(null);  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [applicationDetails, setApplicationDetails] = useState<any>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
   const [tickets, setTickets] = useState<any[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [refundingTickets, setRefundingTickets] = useState<Set<string>>(new Set());
@@ -30,6 +34,14 @@ export default function UserDashboard() {
   useEffect(() => {
     if (user && role === 'customer') {
       checkApplicationStatus();
+      
+      // Safety timeout to prevent infinite checking
+      const timeoutId = setTimeout(() => {
+        console.warn('⏰ [Dashboard] Application status check timeout, forcing completion');
+        setCheckingStatus(false);
+      }, 10000); // 10 second timeout
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [user, role]);
 
@@ -38,27 +50,34 @@ export default function UserDashboard() {
     if (!user) return;
     
     setCheckingStatus(true);
+    console.log('🔍 [Dashboard] Checking seller application status for user:', user.email);
+    
     try {
-      const { data, error } = await supabase()
-        .from('seller_applications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('applied_at', { ascending: false })
-        .limit(1)
-        .single();
+      const response = await fetch('/api/seller-application-status');
+      const result = await response.json();
 
-      if (error) {
-        if (error.code !== 'PGRST116') { // No rows returned
-          console.error('Error checking application status:', error);
-        }
+      console.log('📋 [Dashboard] Seller application status result:', result);
+
+      if (!response.ok) {
+        console.error('❌ [Dashboard] Error checking application status:', result.error);
         setApplicationStatus('none');
-      } else if (data) {
-        setApplicationStatus(data.status as any);
-        setApplicationDetails(data);
+        return;
+      }
+
+      if (!result.hasApplication) {
+        console.log('ℹ️ [Dashboard] No seller application found');
+        setApplicationStatus('none');
+      } else {
+        const application = result.application;
+        console.log('✅ [Dashboard] Found application:', application.is_active ? 'approved' : 'pending');
+        setApplicationStatus(application.is_active ? 'approved' : 'pending');
+        setApplicationDetails(application);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('💥 [Dashboard] Exception in checkApplicationStatus:', error);
+      setApplicationStatus('none');
     } finally {
+      console.log('🏁 [Dashboard] Finished checking application status');
       setCheckingStatus(false);
     }
   };
@@ -67,6 +86,14 @@ export default function UserDashboard() {
   useEffect(() => {
     if (user) {
       fetchUserTickets();
+      
+      // Safety timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.warn('⏰ [Dashboard] Tickets fetch timeout, forcing completion');
+        setLoadingTickets(false);
+      }, 10000); // 10 second timeout
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [user]);
 
@@ -74,8 +101,11 @@ export default function UserDashboard() {
     if (!user) return;
     
     setLoadingTickets(true);
+    console.log('🎫 [Dashboard] Fetching tickets for user:', user.email);
+    
     try {
-      const { data, error } = await supabase()        .from('tickets')
+      const { data, error } = await supabase()
+        .from('tickets')
         .select(`
           *,
           events (
@@ -91,13 +121,20 @@ export default function UserDashboard() {
         .eq('user_id', user.id)
         .order('purchased_at', { ascending: false });
 
+      console.log('🎫 [Dashboard] Tickets query result:', { data, error, count: data?.length });
+
       if (error) {
-        console.error('Error fetching tickets:', error);
+        console.error('❌ [Dashboard] Error fetching tickets:', error);
+        setTickets([]);
       } else {
+        console.log('✅ [Dashboard] Tickets fetched successfully:', data?.length || 0);
         setTickets(data || []);
       }
     } catch (error) {
-      console.error('Error:', error);    } finally {
+      console.error('💥 [Dashboard] Exception in fetchUserTickets:', error);
+      setTickets([]);
+    } finally {
+      console.log('🏁 [Dashboard] Finished fetching tickets');
       setLoadingTickets(false);
     }
   };
@@ -112,19 +149,10 @@ export default function UserDashboard() {
     setRefundingTickets(prev => new Set(prev).add(ticketId));
     
     try {
-      const supabaseClient = supabase();
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      
-      if (!session?.access_token) {
-        alert('Please log in again to refund tickets.');
-        return;
-      }
-
       const response = await fetch('/api/refund-ticket', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ ticketId }),
       });
@@ -200,44 +228,6 @@ export default function UserDashboard() {
       </div>
     );
   }
-
-  const handleApplyForSeller = async () => {
-    setApplying(true);
-    try {
-      // Get the current session token
-      const supabaseClient = supabase();
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      
-      if (!session?.access_token) {
-        alert('Please log in again to apply for seller status.');
-        return;
-      }
-
-      const response = await fetch('/api/apply-seller', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setApplicationStatus('pending');
-        alert('Application submitted successfully! An admin will review it shortly.');
-      } else {
-        console.error('Application error:', data);
-        // Show detailed error for debugging
-        alert(`Error: ${data.message || data.error}\n\nDetails: ${data.details || 'No additional details'}`);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error submitting application. Please try again.');
-    } finally {
-      setApplying(false);
-    }
-  };
 
   const getRoleIcon = () => {
     switch (role) {
@@ -369,7 +359,7 @@ export default function UserDashboard() {
                 <div className="text-center p-2">
                   <Clock className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
                   <p className="font-medium text-yellow-500">Application Pending</p>
-                  <p className="text-xs text-muted-foreground mt-1">Submitted on {applicationDetails?.applied_at ? new Date(applicationDetails.applied_at).toLocaleDateString() : 'recently'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Submitted on {applicationDetails?.created_at ? new Date(applicationDetails.created_at).toLocaleDateString() : 'recently'}</p>
                   <p className="text-sm text-muted-foreground mt-2">An admin will review your application soon</p>
                 </div>
               ) : applicationStatus === 'approved' ? (
@@ -384,16 +374,33 @@ export default function UserDashboard() {
                   <p className="font-medium text-destructive">Application Rejected</p>
                   <p className="text-sm text-muted-foreground mt-2">Contact support for more information</p>
                 </div>
+              ) : showApplicationForm ? (
+                <div className="mt-4">
+                  <SellerApplicationForm 
+                    onSuccess={() => {
+                      setShowApplicationForm(false);
+                      setApplicationStatus('pending');
+                      checkApplicationStatus();
+                    }}
+                  />
+                  <Button 
+                    onClick={() => setShowApplicationForm(false)}
+                    variant="ghost"
+                    className="w-full mt-4"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               ) : (
                 <Button 
-                  onClick={handleApplyForSeller}
-                  disabled={applying}
+                  onClick={() => setShowApplicationForm(true)}
                   className="w-full"
                   variant="outline"
                 >
-                  {applying ? 'Applying...' : 'Apply to Become a Seller'}
+                  Apply to Become a Seller
                 </Button>
-              )}            </CardContent>
+              )}
+            </CardContent>
           </Card>
         )}
       </div>
@@ -503,6 +510,26 @@ export default function UserDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Email Verification Section */}
+      {user && !user.email_confirmed_at && (
+        <div className="mt-8">
+          <Card className="ultra-dark-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Email Verification
+              </CardTitle>
+              <CardDescription>
+                Please verify your email address to unlock all features
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EmailVerification />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

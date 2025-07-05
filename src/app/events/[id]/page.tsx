@@ -32,7 +32,7 @@ export default function EventPage() {
   const supabaseClient = supabase();
 
   // Check if current user can edit/delete this event
-  const canEditEvent = user && (isAdmin || event?.user_id === user.id);
+  const canEditEvent = user && (isAdmin || event?.seller_id === user.id);
   useEffect(() => {
     async function fetchEvent() {
       try {
@@ -75,7 +75,7 @@ export default function EventPage() {
     if (!event || !user) return;
 
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${event.name}"? This action cannot be undone.`
+      `Are you sure you want to delete "${event.title}"? This action cannot be undone.`
     );
 
     if (!confirmDelete) return;
@@ -149,7 +149,7 @@ export default function EventPage() {
   const startEditing = () => {
     if (!event) return;
     setEditData({
-      name: event.name,
+      title: event.title,
       description: event.description,
       date: event.date,
       time: event.time,
@@ -175,19 +175,34 @@ export default function EventPage() {
 
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
+      let requestBody: any = { eventId: event.id };
+      let headers: any = { 'Content-Type': 'application/json' };
+
       if (!session) {
-        alert('❌ Authentication required');
-        setPurchasingTicket(false);
-        return;
+        // Anonymous purchase - collect email
+        const customerEmail = prompt('Enter your email address to receive the ticket:');
+        if (!customerEmail || !customerEmail.includes('@')) {
+          alert('❌ Valid email address is required for ticket purchase');
+          setPurchasingTicket(false);
+          return;
+        }
+
+        const customerName = prompt('Enter your name (optional):') || '';
+        
+        requestBody.customerEmail = customerEmail;
+        requestBody.customerName = customerName;
+        
+        console.log('Anonymous purchase for:', customerEmail);
+      } else {
+        // Authenticated purchase
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+        console.log('Authenticated purchase for:', session.user.email);
       }
 
       const response = await fetch('/api/create-checkout', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ eventId: event.id }),
+        headers,
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
@@ -259,7 +274,7 @@ export default function EventPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">          {/* Header */}
           <div className="mb-8">
-            <h1 className="text-5xl font-black brand-text-gradient mb-4">{event.name}</h1>
+            <h1 className="text-5xl font-black brand-text-gradient mb-4">{event.title}</h1>
             <div className="flex items-center gap-2 mb-4">
               {isUpcoming ? (
                 <Badge className="bg-green-600 hover:bg-green-700">Upcoming Event</Badge>
@@ -299,7 +314,7 @@ export default function EventPage() {
                 <div className="w-full h-96 relative bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg shadow-2xl border border-muted/20 overflow-hidden">
                   <Image
                     src={event.image_url && !imageError ? event.image_url : DEFAULT_EVENT_IMAGE}
-                    alt={event.name}
+                    alt={event.title}
                     fill
                     className="object-cover"
                     onError={() => setImageError(true)}
@@ -451,7 +466,7 @@ export default function EventPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>                  <SocialShareButtons 
-                    title={event.name}
+                    title={event.title}
                     url={eventUrl}
                   />
                 </CardContent>              </Card>
@@ -470,8 +485,8 @@ export default function EventPage() {
                     <label className="block text-sm font-medium text-white mb-2">Event Name</label>
                     <input
                       type="text"
-                      value={editData.name || ''}
-                      onChange={(e) => setEditData({...editData, name: e.target.value})}
+                      value={editData.title || ''}
+                      onChange={(e) => setEditData({...editData, title: e.target.value})}
                       className="w-full p-3 rounded-lg bg-muted/20 border border-muted/30 text-white"
                     />
                   </div>

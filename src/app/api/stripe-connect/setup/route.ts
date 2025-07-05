@@ -8,7 +8,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, returnUrl } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const { returnUrl } = body;
 
     // Get the user from the request
     const supabase = createClient();
@@ -18,41 +19,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the event and verify it exists
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .select('*, users!created_by(id, email)')
-      .eq('id', eventId)
-      .single();
-
-    if (eventError || !event) {
-      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
-    }
-
-    // Check if seller is the event creator
-    if (event.created_by !== user.id) {
-      return NextResponse.json({ error: 'Only event creators can set up Stripe Connect' }, { status: 403 });
-    }
-
-    // Get or create Stripe Connect account
-    const { data: userData } = await supabase
+    // Get user data to check if they're a seller
+    const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('stripe_connect_account_id')
+      .select('*')
       .eq('id', user.id)
       .single();
 
-    let accountId = userData?.stripe_connect_account_id;
+    if (userError || !userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check if user is a seller
+    if (userData.role !== 'seller') {
+      return NextResponse.json({ error: 'Only sellers can set up Stripe Connect' }, { status: 403 });
+    }
+
+    let accountId = userData.stripe_connect_account_id;
 
     if (!accountId) {
       // Create new Stripe Connect account
       const account = await stripe.accounts.create({
         type: 'express',
+        country: 'US',
         email: user.email,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
-        business_type: 'individual',
+        business_profile: {
+          product_description: 'Event ticket sales',
+          mcc: '7922', // Entertainment and recreation services
+        },
+        metadata: {
+          user_id: user.id,
+          platform: 'topcitytickets',
+        },
       });
 
       accountId = account.id;
@@ -60,34 +62,123 @@ export async function POST(request: NextRequest) {
       // Save the account ID to the user
       await supabase
         .from('users')
+        .update({ 
+          stripe_connect_account_id: accountId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+    }
+
+    const defaultReturnUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/profile?stripe_setup=success`;
+    const refreshUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/profile?stripe_setup=refresh`;
+
+    // Check if account is already fully onboarded
+    const account = await stripe.accounts.retrieve(accountId);
+    
+    if (account.details_submitted && account.charges_enabled && account.payouts_enabled) {
+      // Account is fully set up, create login link for dashboard access
+      const loginLink = await stripe.accounts.createLoginLink(accountId);
+      return NextResponse.json({ 
+        accountLink: loginLink.url,
+        accountId,
+        type: 'dashboard'
+      });
+    } else {
+      // Account needs onboarding, create account link
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl || defaultReturnUrl,
+        type: 'account_onboarding',
+      });
+
+      return NextResponse.json({ 
+        accountLink: accountLink.url,
+        accountId,
+        type: 'onboarding'
+      });
+    }
+
+  } catch (error) {
+    console.error('Stripe Connect setup error:', error);
+    return NextResponse.json(
+      { error: 'Failed to set up Stripe Connect', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    // Use cookies for auth since this is called via window.location.href
+    const cookieStore = request.cookies;
+    const supabase = createClient();
+
+    // Try to get user from session
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error('Auth error in GET:', authError);
+      // Redirect to login if not authenticated
+      return NextResponse.redirect(new URL('/login?message=Please sign in to connect Stripe', request.url));
+    }
+
+    // Get user data to check if they're a seller
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (userError || !userData) {
+      console.error('User data error:', userError);
+      return NextResponse.redirect(new URL('/dashboard?error=User not found', request.url));
+    }
+
+    // Check if user is a seller
+    if (userData.role !== 'seller') {
+      return NextResponse.redirect(new URL('/dashboard?error=Only sellers can set up Stripe Connect', request.url));
+    }
+
+    let accountId = userData.stripe_connect_account_id;
+
+    if (!accountId) {
+      // Create new Stripe Connect account
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'US',
+        email: user.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_profile: {
+          url: 'https://topcitytickets.com',
+        },
+      });
+
+      accountId = account.id;
+
+      // Save the account ID to the user record
+      await supabase
+        .from('users')
         .update({ stripe_connect_account_id: accountId })
         .eq('id', user.id);
-
-      // Update the event with the account ID
-      await supabase
-        .from('events')
-        .update({ stripe_connect_account_id: accountId })
-        .eq('id', eventId);
     }
 
     // Create account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${process.env.NEXT_PUBLIC_SITE_URL}/seller/dashboard?error=stripe_connect_refresh`,
-      return_url: returnUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/seller/dashboard?success=stripe_connect_complete`,
+      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard?stripe_refresh=true`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/seller/dashboard?stripe_connected=true`,
       type: 'account_onboarding',
     });
 
-    return NextResponse.json({ 
-      accountLink: accountLink.url,
-      accountId 
-    });
+    // Redirect to Stripe onboarding
+    return NextResponse.redirect(accountLink.url);
 
   } catch (error) {
     console.error('Stripe Connect setup error:', error);
-    return NextResponse.json(
-      { error: 'Failed to set up Stripe Connect' },
-      { status: 500 }
-    );
+    return NextResponse.redirect(new URL('/seller/dashboard?error=Failed to set up Stripe Connect', request.url));
   }
 }
