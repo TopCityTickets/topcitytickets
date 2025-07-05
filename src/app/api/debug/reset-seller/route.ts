@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       }
     );
 
-    // Reset user's seller application fields
+    // Reset user's seller application fields (only the ones that exist)
     const { data: updatedUser, error } = await supabase
       .from('users')
       .update({
@@ -36,12 +36,6 @@ export async function POST(request: Request) {
         seller_contact_phone: null,
         website_url: null,
         seller_applied_at: null,
-        seller_approved_at: null,
-        seller_denied_at: null,
-        can_reapply_at: null,
-        admin_notes: null,
-        stripe_account_id: null,
-        stripe_onboarding_completed: false,
         role: 'customer',
         updated_at: new Date().toISOString()
       })
