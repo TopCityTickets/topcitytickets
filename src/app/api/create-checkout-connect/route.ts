@@ -179,8 +179,40 @@ export async function POST(request: NextRequest) {
 
       if (ticketError) {
         console.error('❌ Ticket creation error:', ticketError);
-      } else {
-        console.log('✅ Ticket created:', ticket.id);
+        return NextResponse.json(
+          { error: 'Failed to create ticket' },
+          { status: 500 }
+        );
+      }
+
+      console.log('✅ Ticket created:', ticket.id);
+
+      // Create escrow hold for the payment
+      try {
+        const escrowResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/escrow/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader // Use the same auth header
+          },
+          body: JSON.stringify({
+            eventId: eventId,
+            ticketId: ticket.id,
+            paymentIntentId: paymentIntent.id,
+            amount: totalAmount
+          })
+        });
+
+        if (!escrowResponse.ok) {
+          console.error('❌ Escrow creation failed:', await escrowResponse.text());
+          // Don't fail the ticket purchase if escrow creation fails
+        } else {
+          const escrowData = await escrowResponse.json();
+          console.log('✅ Escrow hold created:', escrowData.escrowHoldId);
+        }
+      } catch (escrowError) {
+        console.error('❌ Escrow creation error:', escrowError);
+        // Don't fail the ticket purchase if escrow creation fails
       }
 
       return NextResponse.json({
@@ -189,7 +221,7 @@ export async function POST(request: NextRequest) {
           id: paymentIntent.id,
           status: paymentIntent.status,
         },
-        ticket: ticket || null,
+        ticket: ticket,
       });
     }
 

@@ -146,6 +146,8 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_connect_account_id: string | null
           stripe_onboarding_completed: boolean
+          stripe_financial_account_id: string | null
+          stripe_treasury_enabled: boolean
           first_name: string | null
           last_name: string | null
           avatar_url: string | null
@@ -174,6 +176,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_completed?: boolean
+          stripe_financial_account_id?: string | null
+          stripe_treasury_enabled?: boolean
           first_name?: string | null
           last_name?: string | null
           avatar_url?: string | null
@@ -202,6 +206,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_completed?: boolean
+          stripe_financial_account_id?: string | null
+          stripe_treasury_enabled?: boolean
           first_name?: string | null
           last_name?: string | null
           avatar_url?: string | null

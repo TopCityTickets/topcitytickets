@@ -12,16 +12,55 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== SIMPLIFIED SELLER APPLICATION ===');
     
-    // Parse the request body
-    const body = await request.json();
+    // Parse the request body with better error handling
+    let body;
+    try {
+      body = await request.json();
+      console.log('📝 Request body received:', {
+        keys: Object.keys(body),
+        businessName: body.businessName ? 'present' : 'missing',
+        businessType: body.businessType ? 'present' : 'missing',
+        contactEmail: body.contactEmail ? 'present' : 'missing'
+      });
+    } catch (parseError) {
+      console.error('❌ JSON parse error:', parseError);
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid JSON in request body',
+        message: 'Please check your request format and try again',
+        details: parseError instanceof Error ? parseError.message : 'Unknown parse error',
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
+    }
+
     const { businessName, businessType, businessDescription, contactEmail, contactPhone, websiteUrl } = body;
 
-    // Validate required fields
-    if (!businessName || !businessType || !contactEmail) {
+    // Validate required fields with detailed feedback
+    const missingFields = [];
+    if (!businessName || businessName.trim() === '') missingFields.push('businessName');
+    if (!businessType || businessType.trim() === '') missingFields.push('businessType');
+    if (!contactEmail || contactEmail.trim() === '') missingFields.push('contactEmail');
+
+    if (missingFields.length > 0) {
+      console.log('❌ Missing required fields:', missingFields);
       return NextResponse.json({
         success: false,
         error: 'Missing required fields',
-        message: 'Business name, business type, and contact email are required',
+        message: `Please provide: ${missingFields.join(', ')}`,
+        missingFields,
+        receivedFields: Object.keys(body),
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contactEmail)) {
+      console.log('❌ Invalid email format:', contactEmail);
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid email format',
+        message: 'Please provide a valid email address',
         timestamp: new Date().toISOString()
       }, { status: 400 });
     }

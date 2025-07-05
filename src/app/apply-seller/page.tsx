@@ -21,10 +21,17 @@ export default function ApplySellerPage() {
     businessName: '',
     businessType: '',
     description: '',
-    contactEmail: user?.email || '',
+    contactEmail: '',
     contactPhone: '',
     websiteUrl: ''
   });
+
+  // Update contact email when user loads
+  useEffect(() => {
+    if (user?.email) {
+      setFormData(prev => ({ ...prev, contactEmail: user.email }));
+    }
+  }, [user]);
 
   // Check application status on load
   useEffect(() => {
@@ -59,10 +66,21 @@ export default function ApplySellerPage() {
       return;
     }
 
-    if (!formData.businessName || !formData.businessType) {
+    if (!formData.businessName || !formData.businessType || !formData.contactEmail) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields: business name, business type, and contact email.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.contactEmail)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
         variant: "destructive"
       });
       return;
@@ -79,7 +97,7 @@ export default function ApplySellerPage() {
         body: JSON.stringify({
           businessName: formData.businessName,
           businessType: formData.businessType,
-          description: formData.description,
+          businessDescription: formData.description, // Map description to businessDescription
           contactEmail: formData.contactEmail,
           contactPhone: formData.contactPhone,
           websiteUrl: formData.websiteUrl

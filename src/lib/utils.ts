@@ -12,6 +12,13 @@ export function formatPrice(price: number) {
   }).format(price);
 }
 
+export function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
 export function validateEventData<T extends Record<string, unknown>>(
   data: T,
   requiredFields: (keyof T)[]
