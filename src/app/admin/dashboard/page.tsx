@@ -220,69 +220,47 @@ export default function AdminDashboard() {
   };
   const handleApplicationAction = async (applicationId: string, action: 'approved' | 'rejected') => {
     try {
-      // First, get the application to find the seller_id
-      const { data: application, error: fetchError } = await createClient()
-        .from('seller_applications')
-        .select('seller_id, notes')
-        .eq('id', applicationId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching application:', fetchError);
-        alert('Error fetching application');
-        return;
-      }
-
-      // Update the application status - use is_active for approval
-      const updateData: any = { 
-        updated_at: new Date().toISOString()
-      };
+      console.log(`🔍 [Admin] Processing ${action} for user ID: ${applicationId}`);
       
-      if (action === 'approved') {
-        updateData.is_active = true;
-        if (application?.notes) {
-          updateData.notes = `Approved: ${application.notes}`;
-        } else {
-          updateData.notes = 'Approved by admin';
-        }
-      } else {
-        updateData.is_active = false;
-        updateData.notes = 'Rejected by admin';
+      // Use the new admin reviews API to approve/reject seller applications
+      const response = await fetch('/api/admin/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'seller-application',
+          targetId: applicationId, // This is the user ID from the users table
+          approved: action === 'approved',
+          adminId: user?.id,
+          feedback: action === 'approved' ? 'Application approved by admin' : 'Application rejected by admin'
+        }),
+      });
+
+      console.log(`🔍 [Admin] Review response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('🔍 [Admin] Review error:', errorData);
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      const { error: updateError } = await createClient()
-        .from('seller_applications')
-        .update(updateData)
-        .eq('id', applicationId);
-
-      if (updateError) {
-        console.error('Error updating application:', updateError);
-        alert('Error updating application');
-        return;
+      const result = await response.json();
+      
+      console.log('🔍 [Admin] Review result:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to process application');
       }
 
-      // If approved, update the user's role to seller
-      if (action === 'approved' && application?.seller_id) {
-        const { error: roleError } = await createClient()
-          .from('users')
-          .update({ role: 'seller' })
-          .eq('id', application.seller_id);
-
-        if (roleError) {
-          console.error('Error updating user role:', roleError);
-          alert('Application approved but failed to update user role');
-          return;
-        }
-      }
-
-      // Refresh applications
+      // Refresh applications and stats
       fetchApplications();
       fetchStats();
       
       alert(`Application ${action} successfully!${action === 'approved' ? ' User is now a seller.' : ''}`);
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error updating application');
+      console.error('🔍 [Admin] Error updating application:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Failed to update application'}`);
     }
   };
 
