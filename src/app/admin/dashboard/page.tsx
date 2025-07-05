@@ -60,27 +60,40 @@ export default function AdminDashboard() {
   };
   const fetchApplications = async () => {
     try {
-      console.log('Fetching seller applications...');
+      console.log('🔍 [Admin] Fetching seller applications...');
+      console.log('🔍 [Admin] Current user:', user?.email);
       
       // Use the new admin reviews API that fetches from users table
-      const response = await fetch(`/api/admin/reviews?adminId=${user?.id}&type=seller-applications`);
+      const url = `/api/admin/reviews?adminId=${user?.id}&type=seller-applications`;
+      console.log('🔍 [Admin] Fetching from URL:', url);
+      
+      const response = await fetch(url);
+      
+      console.log('🔍 [Admin] Response status:', response.status);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔍 [Admin] Response error:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const result = await response.json();
       
+      console.log('🔍 [Admin] Full API response:', result);
+      
       if (!result.success) {
-        console.error('Error fetching seller applications:', result.error);
+        console.error('🔍 [Admin] API returned error:', result.error);
         setApplications([]);
         return;
       }
       
-      console.log('Seller applications fetched successfully:', result.data.sellerApplications);
+      console.log('🔍 [Admin] Seller applications data:', result.data);
+      console.log('🔍 [Admin] Seller applications array:', result.data.sellerApplications);
+      console.log('🔍 [Admin] Number of applications:', result.data.sellerApplications?.length || 0);
+      
       setApplications(result.data.sellerApplications || []);
     } catch (error) {
-      console.error('Error fetching applications:', error);
+      console.error('🔍 [Admin] Error fetching applications:', error);
       setApplications([]);
     }
   };
