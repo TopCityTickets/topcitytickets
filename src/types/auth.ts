@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 
-export type UserRole = 'user' | 'seller' | 'admin';
+export type UserRole = 'customer' | 'seller' | 'admin';
 
 export interface AuthUser extends User {
   role?: UserRole;
