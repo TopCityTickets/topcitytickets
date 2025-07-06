@@ -1,7 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import type { Metadata } from 'next';
-import Navbar from '@/components/Navbar';
+import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {  return (
     <html lang="en" className="dark">      <body className={`${inter.className} bg-black text-white min-h-screen`}>        <AuthProvider>
-          <Navbar />
+          <Header />
           <main>
             {children}
           </main>

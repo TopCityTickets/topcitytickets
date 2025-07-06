@@ -60,6 +60,14 @@ export default function EventCard({ event, viewMode = 'grid' }: EventCardProps) 
           <CardDescription className="text-sm line-clamp-2 mb-4">
             {event.description}
           </CardDescription>
+          <div className="text-xs text-muted-foreground mb-2">
+            {event.max_tickets && (
+              <p>
+                {event.tickets_sold ?? 0} / {event.max_tickets} tickets sold
+              </p>
+            )}
+            <p>Organizer: {event.organizer_email}</p>
+          </div>
           <div className="flex justify-between items-center">
             {event.ticket_price > 0 ? (
               <Badge className="price-badge text-lg font-semibold">
@@ -130,6 +138,14 @@ export default function EventCard({ event, viewMode = 'grid' }: EventCardProps) 
         <CardDescription className="text-sm line-clamp-3 mb-4">
           {event.description}
         </CardDescription>
+        <div className="text-xs text-muted-foreground">
+          {event.max_tickets && (
+            <p>
+              {event.tickets_sold ?? 0} / {event.max_tickets} tickets sold
+            </p>
+          )}
+          <p>Organizer: {event.organizer_email}</p>
+        </div>
       </CardContent>
       <CardFooter className="p-6 border-t flex justify-between items-center">
         {event.ticket_price > 0 ? (

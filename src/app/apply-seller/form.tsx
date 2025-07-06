@@ -2,18 +2,45 @@
 
 import { useState } from 'react';
 
-export default function ApplySellerSimple() {
+export default function ApplySellerForm() {
   const [formData, setFormData] = useState({
     businessName: '',
     businessType: '',
     description: '',
     contactEmail: '',
     contactPhone: '',
+    websiteUrl: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Seller application submitted! (This is a demo)');
+    
+    try {
+      // Instead of submitting for approval, directly update user to seller
+      const response = await fetch('/api/auto-approve-seller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: formData.businessName,
+          businessType: formData.businessType,
+          description: formData.description,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          websiteUrl: formData.websiteUrl,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('✅ You are now a seller! You can start submitting events.');
+        window.location.href = '/seller/dashboard';
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
+    } catch (error) {
+      alert('❌ Error submitting application. Please try again.');
+    }
   };
 
   return (
@@ -80,6 +107,15 @@ export default function ApplySellerSimple() {
                 onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Contact phone (optional)"
+              />
+            </div>
+            <div>
+              <input
+                type="url"
+                value={formData.websiteUrl}
+                onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Website URL (optional)"
               />
             </div>
           </div>

@@ -43,15 +43,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">      {/* Hero Section */}
       <section className="dark-hero-bg py-20 px-4 min-h-[80vh] flex items-center">
-        <div className="container mx-auto text-center">          <div className="flex justify-center mb-8">
-            <Image 
-              src="https://vzndqhzpzdphiiblwplh.supabase.co/storage/v1/object/public/pub/logo.png" 
-              alt="TopCityTickets Logo" 
-              width={120} 
-              height={120}
-              className="logo-glow pulse-glow"
-            />
-          </div>
+        <div className="container mx-auto text-center">          
             <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tight relative">
             TOP<span className="text-accent">CITY</span>
             <br />

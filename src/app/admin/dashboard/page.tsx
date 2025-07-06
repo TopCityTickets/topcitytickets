@@ -29,6 +29,9 @@ export default function AdminDashboard() {
   const [applications, setApplications] = useState<SellerApplication[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [refundingTickets, setRefundingTickets] = useState<Set<string>>(new Set());
+  const [cleanupData, setCleanupData] = useState<any>(null);
+  const [debugData, setDebugData] = useState<any>(null);
+  const [showCleanup, setShowCleanup] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalSellers: 0,
@@ -170,54 +173,98 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleRefundTicket = async (ticketId: string) => {
-    if (!confirm('Are you sure you want to refund this ticket? This action cannot be undone.')) {
-      return;
-    }
-    
-    setRefundingTickets(prev => new Set(prev).add(ticketId));
-    
+  const fetchCleanupData = async () => {
     try {
-      const response = await fetch('/api/refund-ticket', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ticketId }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        alert('Ticket refunded successfully!');
-        // Refresh tickets list and stats
-        fetchTickets();
-        fetchStats();
-      } else {
-        console.error('Refund error:', data);
-        alert(`Error: ${data.error || 'Failed to refund ticket'}`);
+      const response = await fetch('/api/admin/cleanup');
+      const result = await response.json();
+      if (result.success) {
+        setCleanupData(result.data);
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error processing refund. Please try again.');
-    } finally {
-      setRefundingTickets(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(ticketId);
-        return newSet;
-      });
+      console.error('Error fetching cleanup data:', error);
     }
   };
 
-  const canRefundTicket = (ticket: any) => {
-    // Only allow refund if ticket is valid (not already refunded or used)
-    if (ticket.status !== 'valid') return false;
-    
-    // Check if event hasn't started yet
-    const eventDateTime = new Date(`${ticket.events?.date} ${ticket.events?.time}`);
-    const now = new Date();
-    return eventDateTime > now;
+  const fetchDebugData = async () => {
+    try {
+      const response = await fetch('/api/debug/seller-data');
+      const result = await response.json();
+      if (result.success) {
+        setDebugData(result.debug);
+        console.log('🔍 DEBUG DATA:', result.debug);
+      }
+    } catch (error) {
+      console.error('Error fetching debug data:', error);
+    }
   };
+
+  const fixOldSubmission = async () => {
+    if (!confirm('Fix the old seller submission so it appears in the admin dashboard?')) return;
+    
+    try {
+      const response = await fetch('/api/debug/fix-old-submission', {
+        method: 'POST'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('✅ Old submission fixed! Refreshing dashboard...');
+        fetchApplications(); // Refresh applications
+        fetchStats(); // Refresh stats
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Fix error:', error);
+      alert('❌ Error fixing submission. Check console.');
+    }
+  };
+
+  const sqlFix = async () => {
+    if (!confirm('Force fix all pending seller data with SQL? This will overwrite any missing fields.')) return;
+    
+    try {
+      const response = await fetch('/api/debug/sql-fix', {
+        method: 'POST'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`✅ SQL fix completed! ${result.message}\nRefreshing dashboard...`);
+        fetchApplications(); // Refresh applications
+        fetchStats(); // Refresh stats
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('SQL fix error:', error);
+      alert('❌ Error with SQL fix. Check console.');
+    }
+  };
+
+  const handleCleanupItem = async (id: string, type: 'user' | 'application') => {
+    if (!confirm(`Are you sure you want to clean up this ${type} record?`)) return;
+    
+    try {
+      const response = await fetch(`/api/admin/cleanup?id=${id}&type=${type}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Successfully cleaned up the record!');
+        fetchCleanupData(); // Refresh cleanup data
+        fetchApplications(); // Refresh applications
+        fetchStats(); // Refresh stats
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Cleanup error:', error);
+      alert('Error during cleanup. Please try again.');
+    }
+  };
+
   const handleApplicationAction = async (applicationId: string, action: 'approved' | 'rejected') => {
     try {
       console.log(`🔍 [Admin] Processing ${action} for user ID: ${applicationId}`);
@@ -261,6 +308,62 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('🔍 [Admin] Error updating application:', error);
       alert(`Error: ${error instanceof Error ? error.message : 'Failed to update application'}`);
+    }
+  };
+
+  const canRefundTicket = (ticket: any) => {
+    // Only allow refunds for valid tickets purchased within the last 30 days
+    if (ticket.status !== 'valid') return false;
+    
+    const purchaseDate = new Date(ticket.purchased_at);
+    const now = new Date();
+    const daysDiff = Math.floor((now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return daysDiff <= 30;
+  };
+
+  const handleRefundTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to refund this ticket? This action cannot be undone.')) {
+      return;
+    }
+
+    setRefundingTickets(prev => new Set(prev).add(ticketId));
+
+    try {
+      const response = await fetch('/api/admin/refund-ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ticketId,
+          adminId: user?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to refund ticket');
+      }
+
+      // Refresh tickets
+      fetchTickets();
+      
+      alert('Ticket refunded successfully!');
+    } catch (error) {
+      console.error('Error refunding ticket:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Failed to refund ticket'}`);
+    } finally {
+      setRefundingTickets(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ticketId);
+        return newSet;
+      });
     }
   };
 
@@ -557,6 +660,148 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+          
+          {/* Cleanup Section */}
+          <Card className="ultra-dark-card">
+            <CardHeader>
+              <CardTitle>Data Cleanup</CardTitle>
+              <CardDescription>
+                Identify and clean up orphaned applications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <Button 
+                    onClick={fetchCleanupData} 
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Check for Orphaned Records
+                  </Button>
+                  
+                  <Button 
+                    onClick={fetchDebugData} 
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    🔍 Debug Seller Data
+                  </Button>
+                  
+                  <Button 
+                    onClick={fixOldSubmission} 
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    🔧 Fix Old Submission
+                  </Button>
+                  
+                  <Button 
+                    onClick={sqlFix} 
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    💾 SQL Force Fix
+                  </Button>
+                </div>
+                
+                {debugData && (
+                  <div className="bg-gray-900 p-4 rounded text-sm">
+                    <h4 className="font-semibold mb-2">🔍 Debug Information:</h4>
+                    <div className="space-y-2">
+                      <p>• Pending Users (seller_status = 'pending'): {debugData.counts.pendingUsers}</p>
+                      <p>• Records in seller_applications table: {debugData.counts.sellerApplications}</p>
+                      <p>• Users with seller data: {debugData.counts.usersWithSellerData}</p>
+                      <p>• Users who applied but not pending: {debugData.counts.nonPendingSellerUsers}</p>
+                      
+                      {debugData.sellerApplications.length > 0 && (
+                        <details>
+                          <summary className="cursor-pointer font-semibold">📋 Seller Applications Table Records:</summary>
+                          <div className="ml-4 mt-2 space-y-2">
+                            {debugData.sellerApplications.map((app: any) => (
+                              <div key={app.id} className="border-l-2 border-blue-500 pl-2">
+                                <p>ID: {app.id}</p>
+                                <p>Business: {app.business_name}</p>
+                                <p>Email: {app.contact_email}</p>
+                                <p>Seller ID: {app.seller_id}</p>
+                                <p>Active: {app.is_active ? 'Yes' : 'No'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                      
+                      {debugData.nonPendingSellerUsers.length > 0 && (
+                        <details>
+                          <summary className="cursor-pointer font-semibold">👤 Users Who Applied But Not Pending:</summary>
+                          <div className="ml-4 mt-2 space-y-2">
+                            {debugData.nonPendingSellerUsers.map((user: any) => (
+                              <div key={user.id} className="border-l-2 border-yellow-500 pl-2">
+                                <p>Email: {user.email}</p>
+                                <p>Status: {user.seller_status}</p>
+                                <p>Business: {user.seller_business_name}</p>
+                                <p>Applied: {user.seller_applied_at}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {cleanupData && (
+                  <div className="space-y-4 mt-4">
+                    <div className="text-sm">
+                      <p>Pending Users: {cleanupData.pendingUsersCount}</p>
+                      <p>Application Records: {cleanupData.applicationsCount}</p>
+                    </div>
+                    
+                    {cleanupData.applications.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Orphaned Application Records:</h4>
+                        {cleanupData.applications.map((app: any) => (
+                          <div key={app.id} className="flex items-center justify-between p-2 border rounded">
+                            <div>
+                              <p className="text-sm">{app.business_name}</p>
+                              <p className="text-xs text-muted-foreground">{app.contact_email}</p>
+                            </div>
+                            <Button 
+                              onClick={() => handleCleanupItem(app.id, 'application')}
+                              variant="destructive"
+                              size="sm"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {cleanupData.pendingUsers.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Users with Pending Status:</h4>
+                        {cleanupData.pendingUsers.map((user: any) => (
+                          <div key={user.id} className="flex items-center justify-between p-2 border rounded">
+                            <div>
+                              <p className="text-sm">{user.email}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Applied: {user.seller_applied_at ? new Date(user.seller_applied_at).toLocaleDateString() : 'Unknown'}
+                              </p>
+                            </div>
+                            <Button 
+                              onClick={() => handleCleanupItem(user.id, 'user')}
+                              variant="outline"
+                              size="sm"
+                            >
+                              Reset Status
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

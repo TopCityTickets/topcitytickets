@@ -187,10 +187,13 @@ export default function EventPage() {
           return;
         }
 
-        const customerName = prompt('Enter your name (optional):') || '';
+        const firstName = prompt('Enter your first name:') || '';
+        const lastName = prompt('Enter your last name:') || '';
         
         requestBody.customerEmail = customerEmail;
-        requestBody.customerName = customerName;
+        requestBody.firstName = firstName;
+        requestBody.lastName = lastName;
+        requestBody.customerName = `${firstName} ${lastName}`.trim();
         
         console.log('Anonymous purchase for:', customerEmail);
       } else {
