@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({ 
-        role: role as any,
+        role: role,
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)

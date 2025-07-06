@@ -1,11 +1,9 @@
-import EnhancedAuthForm from '@/components/auth/EnhancedAuthForm';
+import LoginSimple from './simple';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default function LoginPage() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
-      <div className="w-full max-w-md">
-        <EnhancedAuthForm mode="login" />
-      </div>
-    </div>
-  );
+  return <LoginSimple />;
 }

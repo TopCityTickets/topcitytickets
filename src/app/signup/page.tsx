@@ -1,6 +1,9 @@
-import React from 'react';
-import EnhancedAuthForm from '@/components/auth/auth-form';
+import SignupSimple from './simple';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default function SignUpPage() {
-  return <EnhancedAuthForm mode="signup" />;
+  return <SignupSimple />;
 }
