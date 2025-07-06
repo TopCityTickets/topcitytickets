@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 export type UserRole = 'customer' | 'seller' | 'admin';
@@ -36,8 +35,12 @@ export function useAuth() {
       return;
     }
 
-    initializationAttempted.current = true;
-    const client = createClient();
+    const initializeAuth = async () => {
+      initializationAttempted.current = true;
+      
+      // Dynamic import to avoid build issues
+      const { createClient } = await import('@/lib/supabase/client');
+      const client = createClient();
 
     const updateGlobalState = (newUser: User | null, newRole: UserRole, newLoading: boolean) => {
       globalAuthState = { user: newUser, role: newRole, loading: newLoading, initialized: true };
@@ -132,7 +135,11 @@ export function useAuth() {
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []); // Keep empty deps
+  };
+
+  // Call the async function
+  initializeAuth();
+}, []); // Keep empty deps
 
   useEffect(() => {
     return () => {

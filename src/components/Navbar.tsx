@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/utils/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 
@@ -16,6 +15,8 @@ export default function Navbar() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
+        // Dynamic import to avoid build issues
+        const { supabase } = await import("@/utils/supabase");
         const supabaseClient = supabase();
         const { data, error } = await supabaseClient
           .from('users')
