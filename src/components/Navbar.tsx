@@ -14,9 +14,9 @@ export default function Navbar() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
-        // Dynamic import to avoid build issues
-        const { supabase } = await import("@/utils/supabase");
-        const supabaseClient = supabase();
+        // Use the correct Supabase client path
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabaseClient = createClient();
         const { data, error } = await supabaseClient
           .from('users')
           .select('profile_picture_url, avatar_url')
@@ -34,15 +34,38 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     try {
-      // Dynamic import to avoid build issues
-      const { supabase } = await import("@/utils/supabase");
-      const supabaseClient = supabase();
-      await supabaseClient.auth.signOut();
+      // Use the correct Supabase client path
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabaseClient = createClient();
+      
+      console.log('🚪 [Navbar] Signing out...');
+      
+      const { error } = await supabaseClient.auth.signOut();
+      
+      if (error) {
+        console.error('❌ [Navbar] Sign out error:', error);
+        throw error;
+      }
+      
+      console.log('✅ [Navbar] Sign out successful');
+      
+      // Clear any local storage
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // Force redirect to home page
       window.location.href = '/';
     } catch (error) {
-      console.error('Sign out error:', error);
-      // Fallback: just redirect to home
-      window.location.href = '/';
+      console.error('❌ [Navbar] Sign out error:', error);
+      
+      // Fallback: clear storage and redirect anyway
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/';
+      }
     }
   };
 
