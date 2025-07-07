@@ -25,7 +25,9 @@ interface SellerApplication {
 }
 
 export default function AdminDashboard() {
-  const { user, isAdmin, loading } = useAuth();  const [submissions, setSubmissions] = useState<any[]>([]);
+  const { user, isAdmin, loading } = useAuth();
+  
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [applications, setApplications] = useState<SellerApplication[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [refundingTickets, setRefundingTickets] = useState<Set<string>>(new Set());
@@ -40,7 +42,8 @@ export default function AdminDashboard() {
     totalTickets: 0
   });
 
-  useEffect(() => {    if (isAdmin) {
+  useEffect(() => {
+    if (isAdmin) {
       fetchSubmissions();
       fetchApplications();
       fetchStats();
@@ -120,7 +123,9 @@ export default function AdminDashboard() {
       const { count: pendingApplications } = await client
         .from('users')
         .select('*', { count: 'exact', head: true })
-        .eq('seller_status', 'pending');      // Get total events
+        .eq('seller_status', 'pending');
+        
+      // Get total events
       const { count: totalEvents } = await client
         .from('events')
         .select('*', { count: 'exact', head: true });
@@ -136,7 +141,8 @@ export default function AdminDashboard() {
         pendingApplications: pendingApplications || 0,
         totalEvents: totalEvents || 0,
         totalTickets: totalTickets || 0
-      });    } catch (error) {
+      });
+    } catch (error) {
       console.error('Error fetching stats:', error);
     }
   };
