@@ -1,26 +1,6 @@
-/** @type {import('next').NextConfig} */
 module.exports = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  reactStrictMode: true,
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'vzndqhzpzdphiiblwplh.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
-      },
-    ],
+    domains: ['example.com'], // Add your image domains here
   },
-  webpack: (config) => {
-    config.ignoreWarnings = [
-      { message: /critical dependency/i }
-    ];
-    return config;
-  },
-  output: 'standalone',
-}
+};

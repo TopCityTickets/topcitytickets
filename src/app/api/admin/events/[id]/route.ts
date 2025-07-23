@@ -1,136 +1,152 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
+import { createClient } from '@/lib/supabase/server';
 
-export async function POST(
+export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { action } = await request.json();
-    const submissionId = params.id;
-
-    if (!['approve', 'reject'].includes(action)) {
+    const { id } = await params;
+    const supabase = await createClient();
+    
+    // Check if user is authenticated and is admin
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Invalid action. Must be "approve" or "reject".' },
-        { status: 400 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    const supabaseClient = supabase();
-
-    // Get the submission
-    const { data: submission, error: fetchError } = await supabaseClient
-      .from('event_submissions')
+    // Get event details
+    const { data: event, error: eventError } = await supabase
+      .from('events')
       .select('*')
-      .eq('id', submissionId)
+      .eq('id', id)
       .single();
 
-    if (fetchError || !submission) {
+    if (eventError) {
       return NextResponse.json(
-        { error: 'Event submission not found' },
+        { error: 'Event not found' },
         { status: 404 }
       );
     }
 
-    if (action === 'approve') {      // Generate slug
-      const slug = submission.title
-        .toLowerCase()
-        .replace(/[^a-z0-9 -]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+    return NextResponse.json({ event });
 
-      console.log('🔄 Approval process starting:', {
-        submissionId,
-        eventName: submission.title,
-        generatedSlug: slug,
-        currentStatus: submission.status
-      });      // 1. Update submission status with all required fields
-      const updateData = {
-        status: 'approved' as const,
-        approved_at: new Date().toISOString(),
-        admin_feedback: 'Event approved and published',
-        slug: slug
-      };
+  } catch (error) {
+    console.error('Error fetching event:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
-      console.log('📝 Updating submission with:', updateData);
-
-      // Use a more explicit update query to avoid trigger issues
-      const { data: updateResult, error: updateError } = await supabaseClient
-        .from('event_submissions')
-        .update(updateData)
-        .eq('id', submissionId)
-        .select('id, title, status, approved_at, admin_feedback, slug');
-
-      console.log('✅ Update result:', { updateResult, updateError });
-
-      if (updateError) {
-        console.error('Error updating submission:', updateError);
-        return NextResponse.json(
-          { error: `Failed to update submission: ${updateError.message}` },
-          { status: 500 }
-        );
-      }
-
-      // 2. Create public event
-      const eventData = {
-        title: submission.title,
-        description: submission.description,
-        date: submission.date,
-        time: submission.time,
-        venue: submission.venue,
-        ticket_price: Number(submission.ticket_price) || 0,
-        image_url: submission.image_url || null,
-        slug: slug,
-        user_id: submission.user_id || null,
-        organizer_email: submission.organizer_email,
-        is_active: true,
-      };
-
-      const { data: newEvent, error: insertError } = await supabaseClient
-        .from('events')
-        .insert(eventData)
-        .select('id, title')
-        .single();
-
-      if (insertError) {
-        console.error('Error creating event:', insertError);
-        return NextResponse.json(
-          { error: `Failed to create public event: ${insertError.message}` },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: 'Event approved successfully!',
-        event: newEvent,
-        eventUrl: `/events/${newEvent.id}`
-      });    } else if (action === 'reject') {
-      // Update submission status to rejected with admin feedback
-      const { error: updateError } = await supabaseClient
-        .from('event_submissions')
-        .update({ 
-          status: 'rejected',
-          admin_feedback: 'Event submission rejected'
-        })
-        .eq('id', submissionId);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: `Failed to reject submission: ${updateError.message}` },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: 'Event submission rejected.'
-      });
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+    
+    // Check if user is authenticated and is admin
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-  } catch (error: any) {
-    console.error('API Error:', error);
+    // Check if user has admin role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || profile?.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const updates = await request.json();
+
+    // Update event
+    const { data: event, error: updateError } = await supabase
+      .from('events')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return NextResponse.json({ event });
+
+  } catch (error) {
+    console.error('Error updating event:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+    
+    // Check if user is authenticated and is admin
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || profile?.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    // Delete event
+    const { error: deleteError } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    return NextResponse.json({ message: 'Event deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting event:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,15 @@
-export * from './events';
-export * from './auth';
-export type { Database } from './database.types';
+// filepath: topcitytickets/src/types/index.ts
+export interface FormData {
+  businessName: string;
+  businessType: string;
+  description?: string;
+  contactEmail: string;
+  contactPhone?: string;
+  websiteUrl?: string;
+}
 
-// All types are now imported from database.types.ts and events.ts
-// No legacy types needed
+export interface ApiResponse {
+  success: boolean;
+  message: string;
+  error?: string;
+}

@@ -1,6 +1,15 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+
+interface FormData {
+  businessName: string;
+  businessType: string;
+  description: string;
+  contactEmail: string;
+  contactPhone: string;
+  websiteUrl: string;
+}
 
 export default function ApplySellerPage() {
   const [formData, setFormData] = useState({
@@ -16,7 +25,6 @@ export default function ApplySellerPage() {
     e.preventDefault();
     
     try {
-      // Instead of submitting for approval, directly update user to seller
       const response = await fetch('/api/auto-approve-seller', {
         method: 'POST',
         headers: {

@@ -1,0 +1,14 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/admin/cleanup/route": "/api/admin/cleanup",
+  "/api/admin/events/[id]/route": "/api/admin/events/[id]",
+  "/api/auto-approve-seller/route": "/api/auto-approve-seller",
+  "/auth/callback/route": "/auth/callback",
+  "/admin/dashboard/page": "/admin/dashboard",
+  "/apply-seller/page": "/apply-seller",
+  "/admin/events/[id]/page": "/admin/events/[id]",
+  "/auth/confirm/page": "/auth/confirm",
+  "/login/page": "/login",
+  "/seller/dashboard/page": "/seller/dashboard",
+  "/page": "/"
+}

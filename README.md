@@ -1,64 +1,75 @@
-# TopCityTickets
+# Top City Tickets
 
-A simple event ticketing platform built with Next.js and Supabase.
+Welcome to the Top City Tickets project! This application allows users to apply to become sellers and manage their events through a seller dashboard.
 
-## Quick Start
+## Project Structure
 
-### Local Development
+The project is organized as follows:
 
-1. Install dependencies:
+```
+topcitytickets
+├── src
+│   ├── app
+│   │   ├── apply-seller
+│   │   │   └── page.tsx          # Apply Seller page component
+│   │   ├── seller
+│   │   │   └── dashboard
+│   │   │       └── page.tsx      # Seller Dashboard page component
+│   │   ├── api
+│   │   │   └── auto-approve-seller
+│   │   │       └── route.ts       # API route for auto-approving sellers
+│   │   ├── globals.css            # Global CSS styles
+│   │   ├── layout.tsx             # Main layout component
+│   │   └── page.tsx               # Main entry point for the application
+│   ├── components
+│   │   └── ui
+│   │       └── index.ts           # Reusable UI components
+│   └── types
+│       └── index.ts               # TypeScript types and interfaces
+├── public
+│   └── favicon.ico                 # Favicon for the application
+├── package.json                    # npm configuration file
+├── tailwind.config.js              # Tailwind CSS configuration
+├── next.config.js                  # Next.js configuration
+├── tsconfig.json                   # TypeScript configuration
+└── README.md                       # Project documentation
+```
+
+## Getting Started
+
+To get started with the project, follow these steps:
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd topcitytickets
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. Run the development server:
+3. **Run the development server:**
    ```bash
    npm run dev
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Deployment
-
-#### Windows:
-```bash
-.\deploy-simple.bat
-```
-
-#### Mac/Linux:
-```bash
-chmod +x deploy.sh
-./deploy.sh
-```
-
-## User Roles
-
-- **User**: Browse events and purchase tickets
-- **Seller**: Submit events for approval
-- **Admin**: Review and approve events
-
-## Environment Variables
-
-These need to be set in Vercel:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://vzndqhzpzdphiiblwplh.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_SITE_URL=your-vercel-domain
-```
-
-## Build Troubleshooting
-
-If you encounter TypeScript errors during build:
-
-1. Use the simplified build script:
-   ```bash
-   npm run build
+4. **Open your browser and navigate to:**
+   ```
+   http://localhost:3000
    ```
 
-2. For Vercel deployment issues, use:
-   ```bash
-   .\deploy-simple.bat
-   ```
+## Features
 
-This will bypass TypeScript checking during the build process.
+- **Apply to Become a Seller:** Users can fill out a form to apply for seller status.
+- **Seller Dashboard:** Approved sellers can manage their events and view relevant information.
+- **Responsive Design:** The application is designed to be responsive and user-friendly.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.

@@ -1,29 +1,24 @@
+import React from 'react';
 import './globals.css';
-import { Inter } from 'next/font/google';
-import type { Metadata } from 'next';
-import Header from '@/components/layout/header';
-import Footer from '@/components/layout/footer';
-import { AuthProvider } from '@/components/providers/AuthProvider';
+import Navbar from '../components/Navbar';
 
-const inter = Inter({ subsets: ['latin'] });
-
-export const metadata: Metadata = {
-  title: 'TopCityTickets',
-  description: 'Your premier destination for event tickets',
-};
-
-export default function RootLayout({
-  children,
-}: {
+interface LayoutProps {
   children: React.ReactNode;
-}) {  return (
-    <html lang="en" className="dark">      <body className={`${inter.className} bg-black text-white min-h-screen`}>        <AuthProvider>
-          <Header />
-          <main>
+}
+
+export default function RootLayout({ children }: LayoutProps) {
+  return (
+    <html lang="en">
+      <body>
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-grow p-4">
             {children}
           </main>
-          <Footer />
-        </AuthProvider>
+          <footer className="bg-slate-800 p-4 text-center text-white">
+            © {new Date().getFullYear()} Top City Tickets. All rights reserved.
+          </footer>
+        </div>
       </body>
     </html>
   );
