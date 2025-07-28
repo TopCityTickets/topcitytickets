@@ -9,21 +9,26 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.52.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
-    "daisyui": "^5.0.46",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "next": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwindcss": "latest"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@types/node": "24.0.15",
+    "@types/node": "^20.0.0",
+    "autoprefixer": "^10.4.16",
     "eslint": "latest",
     "eslint-config-next": "latest",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.1",
     "typescript": "latest"
   }
 }

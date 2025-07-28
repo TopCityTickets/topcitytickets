@@ -1,6 +1,7 @@
 import React from 'react';
 import './globals.css';
 import Navbar from '../components/Navbar';
+import { AuthProvider } from '../components/providers/AuthProvider';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,16 +10,18 @@ interface LayoutProps {
 export default function RootLayout({ children }: LayoutProps) {
   return (
     <html lang="en">
-      <body>
-        <div className="min-h-screen flex flex-col">
-          <Navbar />
-          <main className="flex-grow p-4">
-            {children}
-          </main>
-          <footer className="bg-slate-800 p-4 text-center text-white">
-            © {new Date().getFullYear()} Top City Tickets. All rights reserved.
-          </footer>
-        </div>
+      <body className="bg-black text-white">
+        <AuthProvider>
+          <div className="min-h-screen">
+            <Navbar />
+            <main className="pt-16">
+              {children}
+            </main>
+            <footer className="bg-black/90 backdrop-blur-md p-4 text-center text-gray-300 border-t border-cyan-400/20">
+              © {new Date().getFullYear()} Top City Tickets. All rights reserved.
+            </footer>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

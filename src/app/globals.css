@@ -2,60 +2,209 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+
+@layer base {
+  :root {
+    --primary: #6b5b95;
+    --secondary: #feb236;
+    --background: #1a1a1a;
+    --text-color: #ffffff;
+    --neon-cyan: #00ffff;
+    --neon-pink: #ff1493;
+    --neon-yellow: #ffff00;
+    --neon-purple: #8a2be2;
+    --neon-green: #00ff00;
+    --neon-blue: #0080ff;
+  }
+
+  * {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #0a0a0a 100%);
+    color: var(--text-color);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .text-neon-cyan {
+    color: #ffffff;
+    text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan), 0 0 15px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+  }
+
+  .text-neon-pink {
+    color: #ffffff;
+    text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink), 0 0 15px var(--neon-pink), 0 0 20px var(--neon-pink);
+  }
+
+  .text-neon-yellow {
+    color: #ffffff;
+    text-shadow: 0 0 5px var(--neon-yellow), 0 0 10px var(--neon-yellow), 0 0 15px var(--neon-yellow), 0 0 20px var(--neon-yellow);
+  }
+
+  .drop-shadow-neon-cyan {
+    filter: drop-shadow(0 0 10px var(--neon-cyan)) drop-shadow(0 0 20px var(--neon-cyan));
+  }
+
+  .drop-shadow-neon-pink {
+    filter: drop-shadow(0 0 10px var(--neon-pink)) drop-shadow(0 0 20px var(--neon-pink));
+  }
+
+  .drop-shadow-neon-yellow {
+    filter: drop-shadow(0 0 10px var(--neon-yellow)) drop-shadow(0 0 20px var(--neon-yellow));
+  }
+
+  .animate-neon-pulse {
+    animation: neon-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-neon-flicker {
+    animation: neon-flicker 1.5s ease-in-out infinite;
+  }
+
+  .shadow-neon-glow {
+    box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-pink), 0 0 30px var(--neon-yellow);
+  }
+}
+
+@layer utilities {
+  @keyframes neon-pulse {
+    0%, 100% { 
+      filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 10px currentColor);
+    }
+    50% { 
+      filter: drop-shadow(0 0 10px currentColor) drop-shadow(0 0 20px currentColor) drop-shadow(0 0 30px currentColor);
+    }
+  }
+
+  @keyframes neon-flicker {
+    0%, 100% { opacity: 1; }
+    25% { opacity: 0.8; }
+    50% { opacity: 1; }
+    75% { opacity: 0.9; }
+  }
+}
+
+/* NEON DOWNTOWN TOPEKA EFFECTS */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+
+/* Neon color variables */
 :root {
-  --primary: #6b5b95;
-  --secondary: #feb236;
-  --background: #1a1a1a;
-  --text-color: #ffffff;
+  --neon-cyan: #00ffff;
+  --neon-pink: #ff1493;
+  --neon-yellow: #ffff00;
+  --neon-purple: #8a2be2;
+  --neon-green: #00ff00;
+  --neon-blue: #0080ff;
 }
 
-body {
-  margin: 0;
-  font-family: 'Arial', sans-serif;
-  background-color: var(--background);
-  color: var(--text-color);
+/* Apply JetBrains Mono globally */
+* {
+  font-family: 'JetBrains Mono', monospace !important;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  color: var(--primary);
+/* Neon text effects with hardcore shadows */
+.text-neon-cyan {
+  color: var(--neon-cyan) !important;
 }
 
-a {
-  color: var(--secondary);
-  text-decoration: none;
+.text-neon-pink {
+  color: var(--neon-pink) !important;
 }
 
-a:hover {
-  text-decoration: underline;
+.text-neon-yellow {
+  color: var(--neon-yellow) !important;
 }
 
-button {
-  cursor: pointer;
+.text-neon-purple {
+  color: var(--neon-purple) !important;
 }
 
-input, textarea, select {
-  font-family: inherit;
-  font-size: 1rem;
+.text-neon-green {
+  color: var(--neon-green) !important;
 }
 
-ul {
-  list-style-type: none;
-  padding: 0;
+.text-neon-blue {
+  color: var(--neon-blue) !important;
 }
 
-.space-y-6 > * + * {
-  margin-top: 1.5rem;
+/* Hardcore 5-layer neon drop shadows */
+.drop-shadow-neon-cyan {
+  filter: drop-shadow(0 0 5px var(--neon-cyan)) 
+          drop-shadow(0 0 10px var(--neon-cyan)) 
+          drop-shadow(0 0 15px var(--neon-cyan)) 
+          drop-shadow(0 0 20px var(--neon-cyan)) 
+          drop-shadow(0 0 25px var(--neon-cyan)) !important;
 }
 
-.bg-gradient-to-br {
-  background: linear-gradient(to bottom right, var(--background), var(--primary));
+.drop-shadow-neon-pink {
+  filter: drop-shadow(0 0 5px var(--neon-pink)) 
+          drop-shadow(0 0 10px var(--neon-pink)) 
+          drop-shadow(0 0 15px var(--neon-pink)) 
+          drop-shadow(0 0 20px var(--neon-pink)) 
+          drop-shadow(0 0 25px var(--neon-pink)) !important;
 }
 
-.text-slate-200 {
-  color: rgba(255, 255, 255, 0.7);
+.drop-shadow-neon-yellow {
+  filter: drop-shadow(0 0 5px var(--neon-yellow)) 
+          drop-shadow(0 0 10px var(--neon-yellow)) 
+          drop-shadow(0 0 15px var(--neon-yellow)) 
+          drop-shadow(0 0 20px var(--neon-yellow)) 
+          drop-shadow(0 0 25px var(--neon-yellow)) !important;
 }
 
-.placeholder-slate-400::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+/* Neon animations */
+@keyframes neon-pulse {
+  0%, 100% { 
+    filter: drop-shadow(0 0 5px currentColor) 
+            drop-shadow(0 0 10px currentColor) 
+            drop-shadow(0 0 15px currentColor);
+  }
+  50% { 
+    filter: drop-shadow(0 0 10px currentColor) 
+            drop-shadow(0 0 20px currentColor) 
+            drop-shadow(0 0 30px currentColor);
+  }
 }
+
+@keyframes neon-flicker {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.8; }
+  50% { opacity: 1; }
+  75% { opacity: 0.9; }
+}
+
+.animate-neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite !important;
+}
+
+.animate-neon-flicker {
+  animation: neon-flicker 1.5s ease-in-out infinite !important;
+}
+
+/* Additional neon glow effects */
+.shadow-neon-glow {
+  box-shadow: 0 0 10px var(--neon-cyan), 
+              0 0 20px var(--neon-pink), 
+              0 0 30px var(--neon-yellow) !important;
+}
+
+/* Gradient text effects */
+.from-neon-cyan { --tw-gradient-from: var(--neon-cyan) !important; }
+.via-neon-purple { --tw-gradient-via: var(--neon-purple) !important; }
+.to-neon-pink { --tw-gradient-to: var(--neon-pink) !important; }
+
+/* Animation delays for particles */
+.animation-delay-500 { animation-delay: 0.5s !important; }
+.animation-delay-1000 { animation-delay: 1s !important; }
+.animation-delay-2000 { animation-delay: 2s !important; }
+.animation-delay-3000 { animation-delay: 3s !important; }
+
+/* Downtown dark theme overrides */
+.bg-black { background-color: #000000 !important; }
+.bg-slate-900 { background-color: #0f172a !important; }
+.bg-gray-900 { background-color: #111827 !important; }
