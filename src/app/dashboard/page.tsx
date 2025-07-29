@@ -90,4 +90,3 @@ function BuyerDashboard() {
 }
 
 export default withAuth(BuyerDashboard);
-}
