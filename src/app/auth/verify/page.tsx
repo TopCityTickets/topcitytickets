@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useSearchParams } from 'next/navigation';
 
-export default function CheckEmailPage() {
+function CheckEmailContent() {
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const searchParams = useSearchParams();
@@ -95,5 +95,13 @@ export default function CheckEmailPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+export default function CheckEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CheckEmailContent />
+    </Suspense>
   );
 }

@@ -4,44 +4,17 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from './providers/AuthProvider';
 import { Button } from './ui/button';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+interface NavItem {
+  href: string;
+  label: string;
+}
 
 export default function Navbar() {
   const { isAuthenticated, role, profile } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Fetch profile role from database
-  async function fetchRole(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching role:', error);
-        return;
-      }
-      
-      if (data) {
-        setRole(data.role);
-      }
-    } catch (err) {
-      console.error('Exception fetching role:', err);
-    }
-  }
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session) fetchRole(data.session.user.id);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      setSession(session);
-      if (session) fetchRole(session.user.id);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, [supabase]);
+  const supabase = createClientComponentClient();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -50,9 +23,9 @@ export default function Navbar() {
 
   const navItems: NavItem[] = [
     { href: '/events', label: 'Events' },
-    ...(session && role === 'user' ? [{ href: '/apply-seller', label: 'Become a Seller' }] : []),
-    ...(session && role === 'seller' ? [{ href: '/seller/dashboard', label: 'Seller Dashboard' }] : []),
-    ...(session && role === 'admin' ? [{ href: '/admin/dashboard', label: 'Admin Dashboard' }] : []),
+    ...(isAuthenticated && role === 'user' ? [{ href: '/apply-seller', label: 'Become a Seller' }] : []),
+    ...(isAuthenticated && role === 'seller' ? [{ href: '/seller/dashboard', label: 'Seller Dashboard' }] : []),
+    ...(isAuthenticated && role === 'admin' ? [{ href: '/admin/dashboard', label: 'Admin Dashboard' }] : []),
   ];
 
   return (
@@ -83,7 +56,7 @@ export default function Navbar() {
           
           {/* Right side buttons - moved in from edge */}
           <div className="flex items-center space-x-4 mr-8">
-            {session ? (
+            {isAuthenticated ? (
               <button
                 onClick={handleSignOut}
                 className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg hover:shadow-red-500/25"
@@ -127,7 +100,7 @@ export default function Navbar() {
                   {item.label}
                 </Link>
               ))}
-              {session ? (
+              {isAuthenticated ? (
                 <button
                   onClick={() => {
                     handleSignOut();
