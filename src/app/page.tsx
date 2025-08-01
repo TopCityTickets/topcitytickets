@@ -71,21 +71,21 @@ export default function HomePage() {
         <div className="text-center max-w-4xl mx-auto">
           {/* TOP CITY neon sign - more reasonable sizing */}
           <div className="mb-12">
-            <h1 className="text-6xl md:text-8xl font-black tracking-widest mb-6 leading-none">
-              <span className="inline-block text-neon-cyan drop-shadow-neon-cyan animate-neon-pulse font-mono">TOP</span>
+            <h1 className="text-6xl md:text-8xl font-black tracking-widest mb-6 leading-none relative">
+              <span className="inline-block text-cyan-400 font-mono">TOP</span>
               <br className="md:hidden" />
-              <span className="inline-block text-neon-pink drop-shadow-neon-pink animate-neon-pulse md:ml-6 font-mono">CITY</span>
+              <span className="inline-block text-pink-400 md:ml-6 font-mono">CITY</span>
             </h1>
             <div className="h-2 w-48 bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink mx-auto mb-4 animate-neon-flicker shadow-neon-glow rounded-full"></div>
-            <h2 className="text-3xl md:text-5xl font-bold text-neon-yellow drop-shadow-neon-yellow tracking-wider animate-neon-pulse font-mono">
+            <h2 className="text-3xl md:text-5xl font-bold text-yellow-400 tracking-wider font-mono">
               TICKETS
             </h2>
           </div>
 
           {/* Tagline */}
           <p className="text-2xl md:text-3xl text-white mb-8 max-w-2xl mx-auto leading-relaxed font-semibold tracking-wide">
-            The <span className="text-cyan-400 drop-shadow-neon-cyan">heartbeat</span> of Topeka's nightlife.<br />
-            Where the <span className="text-pink-400 drop-shadow-neon-pink">capital city</span> comes alive after dark.
+            The <span className="text-black drop-shadow-neon-cyan">heartbeat</span> of Topeka's nightlife.<br />
+            Where the <span className="text-black drop-shadow-neon-pink">capital city</span> comes alive after dark.
           </p>
 
           {/* CTA Buttons */}

@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { eventActions, Event } from '@/lib/actions/events';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 export default function EventsPage() {
-  const supabase = createClientComponentClient();
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -22,26 +22,25 @@ export default function EventsPage() {
 
   const fetchEvents = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('status', 'active')
-      .order('date', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching events:', error);
-    } else {
+    setError(null);
+    
+    try {
+      const data = await eventActions.getActiveEvents();
       setEvents(data);
+    } catch (err: any) {
+      console.error('Error fetching events:', err);
+      setError(err.message || 'Failed to load events');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const filteredEvents = events.filter((event: any) => {
+  const filteredEvents = events.filter((event: Event) => {
     const matchesSearch = 
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesCity = selectedCity === 'all' || event.city?.toLowerCase() === selectedCity;
+    const matchesCity = selectedCity === 'all' || event.location?.toLowerCase().includes(selectedCity);
     const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
 
     return matchesSearch && matchesCity && matchesCategory;
@@ -56,6 +55,25 @@ export default function EventsPage() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-neon-cyan">Loading events...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black to-slate-900">
+        <div className="text-center">
+          <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-6 max-w-md">
+            <h2 className="text-red-400 text-xl font-bold mb-2">Error Loading Events</h2>
+            <p className="text-red-300 mb-4">{error}</p>
+            <Button 
+              onClick={fetchEvents}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );

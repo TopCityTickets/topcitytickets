@@ -17,12 +17,17 @@ export default function Navbar() {
   const supabase = createClientComponentClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const navItems: NavItem[] = [
     { href: '/events', label: 'Events' },
+    ...(isAuthenticated ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
     ...(isAuthenticated && role === 'user' ? [{ href: '/apply-seller', label: 'Become a Seller' }] : []),
     ...(isAuthenticated && role === 'seller' ? [{ href: '/seller/dashboard', label: 'Seller Dashboard' }] : []),
     ...(isAuthenticated && role === 'admin' ? [{ href: '/admin/dashboard', label: 'Admin Dashboard' }] : []),

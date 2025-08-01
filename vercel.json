@@ -1,0 +1,11 @@
+{
+  "buildCommand": "next build",
+  "installCommand": "npm install --force",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://hmrsozzpkmgxumwpbqpk.supabase.co",
+    "NEXT_PUBLIC_SITE_URL": "https://topcitytickets.org",
+    "NEXTAUTH_URL": "https://topcitytickets.org"
+  }
+}

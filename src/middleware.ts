@@ -1,8 +1,11 @@
-"use client";
-
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
+// Helper function to check if a path matches any of the routes
+const matchesRoute = (path: string, routes: string[]) => {
+  return routes.some(route => path.startsWith(route));
+};
 
 const PUBLIC_ROUTES = [
   '/',
@@ -18,77 +21,111 @@ const PROTECTED_ROUTES = [
   '/dashboard',
   '/profile',
   '/tickets',
-  '/orders',
-  '/submit-event'
+  '/orders'
 ];
 
-const SELLER_ROUTES = ['/seller'];
-const ADMIN_ROUTES = ['/admin'];
+const SELLER_ROUTES = [
+  '/seller',
+  '/seller/dashboard',
+  '/submit-event'  // Submit event is only for sellers
+];
 
-export async function middleware(request: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req: request, res });
-  
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+const ADMIN_ROUTES = [
+  '/admin',
+  '/admin/dashboard',
+  '/admin/applications',
+  '/admin/events'
+];
 
-  // Get the pathname
-  const path = request.nextUrl.pathname;
+async function middlewareFunction(request: NextRequest) {
+  try {
+    const res = NextResponse.next();
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            res.cookies.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            res.cookies.set({ name, value: '', ...options })
+          },
+        },
+      }
+    );
+    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  // Handle auth errors in URL
-  const searchParams = request.nextUrl.searchParams;
-  if (searchParams.has('error')) {
-    return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
-  }
+    const currentPath = request.nextUrl.pathname;
+    const searchParams = request.nextUrl.searchParams;
 
-  // Function to check if path starts with any of the routes
-  const pathStartsWith = (routes: string[]) => routes.some(route => path.startsWith(route));
-
-  // Allow public routes and static files
-  if (pathStartsWith(PUBLIC_ROUTES)) {
-    return res;
-  }
-
-  // Check if user is authenticated
-  if (!session) {
-    // Only redirect if trying to access protected routes
-    if (pathStartsWith([...PROTECTED_ROUTES, ...SELLER_ROUTES, ...ADMIN_ROUTES])) {
-      // Store the attempted URL to redirect after login
-      const redirectUrl = new URL('/login', request.url);
-      redirectUrl.searchParams.set('redirectTo', path);
-      return NextResponse.redirect(redirectUrl);
+    // Handle auth errors in URL
+    if (searchParams.has('error')) {
+      return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
     }
+
+    // Special handling for auth callback with email verification
+    if (currentPath === '/auth/callback' && searchParams.has('type') && searchParams.get('type') === 'email_verification') {
+      return res;
+    }
+
+    // Always allow public routes
+    if (PUBLIC_ROUTES.some(route => currentPath.startsWith(route))) {
+      return res;
+    }
+
+    // Check authentication for protected routes
+    if (!session) {
+      if (matchesRoute(currentPath, [...PROTECTED_ROUTES, ...SELLER_ROUTES, ...ADMIN_ROUTES])) {
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('redirectTo', currentPath);
+        return NextResponse.redirect(redirectUrl);
+      }
+      return res;
+    }
+
+    // If user is authenticated, check role-based access
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('role, setup_completed')
+      .eq('id', session.user.id)
+      .single();
+
+    // Redirect to welcome page if profile setup is not completed
+    if (!userProfile?.setup_completed && currentPath !== '/welcome') {
+      return NextResponse.redirect(new URL('/welcome', request.url));
+    }
+
+    // Check role-based access for admin routes
+    if (matchesRoute(currentPath, ADMIN_ROUTES) && userProfile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Check role-based access for seller routes
+    if (matchesRoute(currentPath, SELLER_ROUTES) && !['seller', 'admin'].includes(userProfile?.role || '')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
     return res;
+  } catch (error) {
+    // In case of any error, allow the request to proceed
+    // but log the error in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Middleware error:', error);
+    }
+    return NextResponse.next();
   }
-
-  // Get user role and profile from profiles table
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, setup_completed')
-    .eq('id', session.user.id)
-    .single();
-
-  const userRole = profile?.role || 'user';
-
-  // Handle role-based access
-  if (SELLER_ROUTES.some(route => path.startsWith(route)) && userRole !== 'seller') {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  if (ADMIN_ROUTES.some(route => path.startsWith(route)) && userRole !== 'admin') {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // Check for first-time login
-  if (!profile?.setup_completed && path !== '/welcome') {
-    return NextResponse.redirect(new URL('/welcome', request.url));
-  }
-
-  return res;
 }
 
-export const config = {
+// Export the middleware function and config
+export const middleware = middlewareFunction;export const config = {
   matcher: [
     /*
      * Match all request paths except:
@@ -99,5 +136,5 @@ export const config = {
      * - api routes (they handle their own auth)
      */
     '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
-  ],
+  ]
 };

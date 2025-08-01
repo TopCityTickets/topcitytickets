@@ -3,15 +3,17 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
+import type { User } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/types';
 
 type UserRole = 'user' | 'seller' | 'admin';
 
 interface AuthState {
-  user: any;
+  user: User | null;
   role: UserRole | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  profile: any;
+  profile: Database['public']['Tables']['profiles']['Row'] | null;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -23,7 +25,7 @@ const AuthContext = createContext<AuthState>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClientComponentClient();
+  const supabase = createClientComponentClient<Database>();
   const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -38,13 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // Get user profile and role
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
-
+        
         setAuthState({
           user: session.user,
           role: (profile?.role as UserRole) || 'user',
@@ -52,6 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isAuthenticated: true,
           profile,
         });
+
+        // Handle first-time login
+        if (!profile?.setup_completed) {
+          router.push('/welcome');
+        }
       } else {
         setAuthState({
           user: null,
@@ -63,7 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Set up auth state listener
+    setupAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         const { data: profile } = await supabase
@@ -94,8 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
     });
-
-    setupAuth();
 
     return () => {
       subscription.unsubscribe();

@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { sellerActions } from '@/lib/actions/seller';
+import { useRouter } from 'next/navigation';
 
 interface FormData {
   businessName: string;
@@ -12,6 +15,10 @@ interface FormData {
 }
 
 export default function ApplySellerPage() {
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     businessName: '',
     businessType: '',
@@ -24,32 +31,31 @@ export default function ApplySellerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      const response = await fetch('/api/auto-approve-seller', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          seller_business_name: formData.businessName,
-          seller_business_type: formData.businessType,
-          seller_description: formData.description,
-          seller_contact_email: formData.contactEmail,
-          seller_contact_phone: formData.contactPhone,
-          website_url: formData.websiteUrl,
-        }),
-      });
+    if (!isAuthenticated || !user) {
+      setError('You must be logged in to apply as a seller');
+      return;
+    }
 
-      if (response.ok) {
-        alert('🎉 Congratulations! You are now a seller! Redirecting to seller dashboard...');
-        window.location.href = '/seller/dashboard';
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
-      }
-    } catch (error) {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await sellerActions.autoApproveSeller({
+        business_name: formData.businessName,
+        business_type: formData.businessType,
+        description: formData.description,
+        contact_email: formData.contactEmail,
+        contact_phone: formData.contactPhone,
+        website_url: formData.websiteUrl,
+      }, user.id);
+
+      alert('🎉 Congratulations! You are now a seller! Redirecting to seller dashboard...');
+      router.push('/seller/dashboard');
+    } catch (error: any) {
       console.error('Error submitting application:', error);
-      alert('Error submitting application. Please try again.');
+      setError(error.message || 'Error submitting application. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +65,23 @@ export default function ApplySellerPage() {
       [e.target.name]: e.target.value
     }));
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+        <div className="ultra-dark-card w-full max-w-md p-8 text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Authentication Required</h1>
+          <p className="text-slate-300 mb-6">You must be logged in to apply as a seller.</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
@@ -71,6 +94,12 @@ export default function ApplySellerPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
           <div>
             <label htmlFor="businessName" className="block text-sm font-medium text-slate-200 mb-2">
               Business Name *
@@ -172,9 +201,10 @@ export default function ApplySellerPage() {
           <div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all dark-button-glow"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all dark-button-glow disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Apply to Become a Seller
+              {loading ? 'Submitting Application...' : 'Apply to Become a Seller'}
             </button>
           </div>
         </form>

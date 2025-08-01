@@ -2,36 +2,72 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { authActions } from "@/lib/actions/auth";
 
 export default function SignUpPage() {
-  const supabase = createClientComponentClient();
   const router = useRouter();
-
+  
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResendOption, setShowResendOption] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setShowResendOption(false);
+    
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      });
-      if (signUpError) {
-        setError(signUpError.message);
-      } else {
-        // Show welcome and redirect
-        router.push("/login");
+      await authActions.signUp(email, password, fullName);
+      
+      // Show success message and redirect
+      alert("Account created successfully! Please check your email to verify your account, then you can log in.");
+      router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
+    } catch (err: any) {
+      console.error("Sign up error:", err);
+      const errorMessage = err.message || "An unexpected error occurred";
+      setError(errorMessage);
+      
+      // If error suggests user already exists, show resend option
+      if (errorMessage.includes('already') || errorMessage.includes('registered') || errorMessage.includes('exists')) {
+        setShowResendOption(true);
       }
-    } catch (err) {
-      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestartSignup = async () => {
+    if (!email) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/restart-signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setError(null);
+        setShowResendOption(false);
+        alert(`${result.message}\n\nPlease check your email and try signing up again if needed.`);
+        if (result.action === 'resent') {
+          router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
+        }
+      } else {
+        setError(`Unable to restart: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error('Error restarting signup:', error);
+      setError('Failed to restart signup process. Please contact support.');
     } finally {
       setLoading(false);
     }
@@ -101,6 +137,18 @@ export default function SignUpPage() {
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               {error}
+              {showResendOption && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={handleRestartSignup}
+                    disabled={loading}
+                    className="text-sm underline text-red-600 hover:text-red-800 disabled:opacity-50"
+                  >
+                    {loading ? 'Processing...' : 'Restart signup process'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
           <div>
