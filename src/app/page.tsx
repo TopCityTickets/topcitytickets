@@ -2,15 +2,80 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useSearchParams, useRouter } from 'next/navigation'
 
 export default function HomePage() {
   const supabase = createClientComponentClient();
   const [session, setSession] = useState<any>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: listener } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
     return () => listener.subscription.unsubscribe();
   }, [supabase]);
+
+  // Handle email confirmation
+  useEffect(() => {
+    const handleEmailConfirmation = async () => {
+      const code = searchParams.get('code');
+      if (code && !isConfirming) {
+        setIsConfirming(true);
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (error) {
+            console.error('Email confirmation error:', error);
+            router.push('/auth/auth-code-error?error=confirmation_failed');
+            return;
+          }
+
+          if (data?.user) {
+            console.log('Email confirmed successfully for user:', data.user.id);
+            // Check if user needs to complete setup
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('setup_completed, role')
+              .eq('id', data.user.id)
+              .single();
+
+            if (!profile || !profile.setup_completed) {
+              router.push('/welcome');
+            } else if (profile.role === 'admin') {
+              router.push('/admin/dashboard');
+            } else if (profile.role === 'seller') {
+              router.push('/seller/dashboard');
+            } else {
+              router.push('/dashboard');
+            }
+          }
+        } catch (error) {
+          console.error('Email confirmation error:', error);
+          router.push('/auth/auth-code-error?error=confirmation_failed');
+        } finally {
+          setIsConfirming(false);
+        }
+      }
+    };
+
+    handleEmailConfirmation();
+  }, [searchParams, supabase, router, isConfirming]);
+
+  // Show loading state while confirming email
+  if (isConfirming) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-br from-black via-slate-900 to-gray-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-white mb-2">Confirming your email...</h2>
+          <p className="text-gray-300">Please wait while we verify your account.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[calc(100vh-4rem)] relative overflow-hidden">
       {/* Hardcore downtown night background */}
